@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "sync.h": "c",
+        "memory.h": "c",
+        "pcb.h": "c",
+        "cstring": "c",
+        "variant": "c",
+        "atomic": "c"
+    }
+}
