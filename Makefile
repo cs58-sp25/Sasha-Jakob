@@ -1,6 +1,6 @@
 #
 #	Sample Makefile for Yalnix kernel and user programs.
-#	
+#
 #	Prepared by Sean Smith and Adam Salem and various Yalnix developers
 #	of years past...
 #
@@ -52,7 +52,7 @@ YALNIX_OUTPUT = yalnix
 #Use the gcc compiler for compiling and linking
 CC = gcc
 
-DDIR58 = ../
+DDIR58 = ${YALNIX_FRAMEWORK}
 LIBDIR = $(DDIR58)/lib
 INCDIR = $(DDIR58)/include
 ETCDIR = $(DDIR58)/etc
@@ -98,7 +98,7 @@ CPPFLAGS=  -D_FILE_OFFSET_BITS=64 -m32 -fno-builtin -I. -I$(INCDIR) -g -DLINUX -
 # %.o: %.c: rules for setting up dependencies.  Don't use this directly
 # %: %.o: rules for setting up dependencies.  Don't use this directly
 
-all: $(ALL)	
+all: $(ALL)
 
 clean:
 	rm -f *.o *~ TTYLOG* TRACE $(YALNIX_OUTPUT) $(USER_APPS) $(KERNEL_OBJS) $(USER_OBJS) core.* ~/core

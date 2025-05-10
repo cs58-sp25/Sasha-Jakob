@@ -1,1 +1,4 @@
 # Add stuff
+*.Identifier
+.DS_Store
+.vscode

@@ -5,6 +5,7 @@
  */
 
 #include <hardware.h>
+#include <pcb.h>
 
 /**
  * KernelStart - Entry point for the Yalnix kernel
@@ -37,7 +38,7 @@ void init_interrupt_vector(void);
  *
  * @return Pointer to idle PCB, or NULL on failure
  */
-pcb_t *create_idle_process(void);
+pcb_t *create_idle_process(UserContext *uctxt)
 
 
 /**

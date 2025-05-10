@@ -15,11 +15,14 @@
 #include "pcb.h"
 #include "kernel.h"
 #include "memory.h"
+#include "syscalls.h"
+#include "traps.h"
+#include "list.h"
+#include "sync.h"
 
 
 /* Global variables for kernel state */
 pcb_t *current_process;  // Currently running process
-queue_t *ready_queue;    // Queue of ready processes
 
 
 void main(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
@@ -47,7 +50,7 @@ void main(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
     // Create the idle process - runs when no other process is ready
     // This process will execute the DoIdle function in an infinite loop
-    idle_process = create_idle_process(uctxt);
+    pcb_t* idle_process = create_idle_process(uctxt);
     if (!idle_process) {
         TracePrintf(0, "ERROR: Failed to create idle process\n");
         Halt();  // System needs at least one process to function
@@ -86,8 +89,6 @@ void init_interrupt_vector(void) {
 
     TracePrintf(0, "Interrupt vector table initialized at 0x%p\n", vector_table);
 }
-
-
 
 pcb_t *create_idle_process(UserContext *uctxt) {
     TracePrintf(1, "ENTER create_idle_process.\n");
