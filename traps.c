@@ -2,29 +2,42 @@
 
 
 void kernel_handler(UserContext* cont){
-
-    int ind = cont->code & YALNIX_MASK;
-    TracePrintf(1, "Userspace is trying to use the syscall with code %x.\n", ind);
-    // Eventually this will be helpful
-    // if (ind >= 0 && ind < 256 && syscall_handlers[ind] != NULL){ 
-    //     // If the syscall exists call it
-    //     syscall_handlers[index](context);
-    // } else {
-    //     // Otherwise return an error to the User
-    //     UserContext->regs[0] = ERROR
-    // }
+    if (ind >= 0 && ind < 256 && syscall_handlers[ind] != NULL){ 
+        // If the syscall exists call it
+        syscall_handlers[index](context);
+    } else {
+        // Otherwise return an error to the User
+        UserContext->regs[0] = ERROR
+    }
 }
 
 void clock_handler(UserContext* cont){
     TracePrintf(1, "There has been a clock trap");
-    // Loop through each of the blocked processes
-        // For each one, if it is delaying, decrement the delay counter
-        // If the delay counter is at 0 move it back to the ready queue
+    // Loops through all delayed processes, decrements their time, and puts them in the ready queue if they're done delaying
+    update_delayed_processes();
     // Update the current process's run_time
+    pcb_t *curr = current_process;
+    curr->run_time++;
     // Check if the current process run_time == it's time slice
         // If so, change the currently schedeuled process using a KCSwitch
-    // Have processes waiting on other processes to complete check if that process is in zombie pcb
-        // If the process it's waiting on is in zombies give it the exit code in reg[0] and put it in the ready queue
+    if(curr->run_time > curr->time_slice){
+        pcb_t *next = peak(ready_queue);
+        if(next != Null){
+            // Set the current process's UC to the given user context
+            curr->user_context = uctxt;
+            // Set the current process's status to the default
+            curr->status = PROCESS_DEFAULT;
+            // Add the process to the ready queue
+            add_to_ready_queue(curr);
+
+            // Schedule another process
+            next = schedule();
+            // Set the uctxt to the newly scheduled processes uc
+            uctxt = next->user_context;
+        }
+        
+    }
+
 }
 
 void other(void){

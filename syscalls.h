@@ -5,6 +5,7 @@
 #include "pcb.h"
 #include "yuser.h"
 #include "sync.h"
+#include "memory.h"
 
 void (*syscall_handlers[])(UserContext *);
 void SysFork(UserContext *uctxt);

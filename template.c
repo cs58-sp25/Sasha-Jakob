@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <ykernel.h>
 #include <load_info.h>
+#include "pcb.h"
+#include "memory.h"
 
 /*
  * ==>> #include anything you need for your kernel here
@@ -26,10 +28,8 @@
  * ==>> Declare the argument "proc" to be a pointer to the PCB of 
  * ==>> the current process. 
  */
-int
-LoadProgram(char *name, char *args[], proc) 
-
-{
+int LoadProgram(char *name, char *args[], pcb_t *proc) {
+  TracePrintf(1, "Enter LoadProgram.\n");
   int fd;
   int (*entry)();
   struct load_info li;
@@ -110,8 +110,6 @@ LoadProgram(char *name, char *args[], proc)
    */
   cp2 = (caddr_t)cpp - INITIAL_STACK_FRAME_SIZE;
 
-
-
   TracePrintf(1, "prog_size %d, text %d data %d bss %d pages\n",
 	      li.t_npg + data_npg, li.t_npg, li.id_npg, li.ud_npg);
 
@@ -144,6 +142,8 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> (rewrite the line below to match your actual data structure) 
    * ==>> proc->uc.sp = cp2; 
    */
+  // Rewrite the line from above to do what it's supposed to
+  proc->user_context.sp = cp2;
 
   /*
    * Now save the arguments in a separate buffer in region 0, since
@@ -154,6 +154,11 @@ LoadProgram(char *name, char *args[], proc)
   /* 
    * ==>> You should perhaps check that malloc returned valid space 
    */
+  // Check to see if the malloc failed
+  if (cp2 == NULL){
+    TracePrintf(1, "ERROR, malloc for cp2 failed in LoadProgram.\n");
+    return ERROR;
+  }
 
   for (i = 0; args[i] != NULL; i++) {
     TracePrintf(3, "saving arg %d = '%s'\n", i, args[i]);
@@ -171,6 +176,21 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> curent process by walking through the R1 page table and,
    * ==>> for every valid page, free the pfn and mark the page invalid.
    */
+  // Loop over the region 1 page table
+  for(int i = 0; i < VMEM_1_SIZE; i++){
+    // Get the ith page table entry
+    pte_t entry = proc->region1_pt[i];
+    if(entry.valid){
+      // free the pfn
+      pfn = entry.pfn;
+      free_frame(pfn);
+      entry.pfn = 0;
+      // Set the protections and validity of the page to all 0
+      entry.prot = 0;
+      entry.valid = 0;
+    }
+  }
+  
 
   /*
    * ==>> Then, build up the new region1.  
@@ -183,6 +203,17 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> These pages should be marked valid, with a protection of
    * ==>> (PROT_READ | PROT_WRITE).
    */
+  for(int i = text_pg1; i < text_pg1 + li.t_npg; i++){
+    pte_t entry = proc->region1_pt[i];
+    int nf = allocateFreeFrame();
+    if(nf == error){
+      TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
+      return ERROR;
+    }
+    entry.valid = 1;
+    entry.prot = PROT_READ | PROT_WRITE;
+    entry.pfn = nf
+  }
 
   /*
    * ==>> Then, data. Allocate "data_npg" physical pages and map them starting at
@@ -190,6 +221,17 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> These pages should be marked valid, with a protection of
    * ==>> (PROT_READ | PROT_WRITE).
    */
+  for(int i = data_pg1; i < data_pg1 + data_npg; i++){
+    pte_t entry = proc->region1_pt[i];
+    int nf = allocateFreeFrame();
+    if(nf == error){
+      TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
+      return ERROR;
+    }
+    entry.valid = 1;
+    entry.prot = PROT_READ | PROT_WRITE;
+    entry.pfn = nf
+  }
 
   /* 
    * ==>> Then, stack. Allocate "stack_npg" physical pages and map them to the top
@@ -197,11 +239,22 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> These pages should be marked valid, with a
    * ==>> protection of (PROT_READ | PROT_WRITE).
    */
+  for(int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++){
+    pte_t entry = proc->region1_pt[i];
+    int nf = allocateFreeFrame();
+    if(nf == error){
+      TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
+      return ERROR;
+    }
+    entry.valid = 1;
+    entry.prot = PROT_READ | PROT_WRITE;
+    entry.pfn = nf
+  }
 
   /*
    * ==>> (Finally, make sure that there are no stale region1 mappings left in the TLB!)
    */
-
+  WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
   /*
    * All pages for the new address space are now in the page table.  
    */
@@ -242,6 +295,12 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> If any of these page table entries is also in the TLB, 
    * ==>> you will need to flush the old mapping. 
    */
+  for(int i = text_pg1; i < text_pg1 + li.t_npg; i++){
+    pte_t entry = proc->region1_pt[i];
+    entry.prot = PROT_READ | PROT_EXEC;
+    // This operation has no effect if the page is not in the TLB, may be inefficient but oh well
+    WriteRegister(REG_TLB_FLUSH, i << PAGESHIFT);
+  }
 
 
   
@@ -258,6 +317,7 @@ LoadProgram(char *name, char *args[], proc)
    * ==>> (rewrite the line below to match your actual data structure) 
    * ==>> proc->uc.pc = (caddr_t) li.entry;
    */
+  proc->user_context.pc = (caddr_t) li.entry;
 
   /*
    * Now, finally, build the argument list on the new stack.
