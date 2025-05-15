@@ -4,20 +4,21 @@
  * Description: Kernel implementation for Yalnix OS
  */
 
-#include "kernel.h"
 #include <hardware.h>
 #include <ctype.h>
-#include "list.h"
 #include <load_info.h>
-#include "memory.h"
-#include "pcb.h"
-#include "sync.h"
-#include "syscalls.h"
-#include "traps.h"
 #include <yalnix.h>
 #include <ykernel.h>
 #include <ylib.h>
 #include <yuser.h>
+
+#include "pcb.h"
+#include "sync.h"
+#include "syscalls.h"
+#include "traps.h"
+#include "kernel.h"
+#include "list.h"
+#include "memory.h"
 
 /* Global variables for kernel state */
 pcb_t *current_process;  // Currently running process

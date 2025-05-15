@@ -6,6 +6,8 @@
         "list.h": "c",
         "yalnix.h": "c",
         "ykernel.h": "c",
-        "ylib.h": "c"
+        "ylib.h": "c",
+        "yuser.h": "c",
+        "syscalls.h": "c"
     }
 }

@@ -8,8 +8,8 @@
 
 #include <stddef.h>
 #include "memory.h"
-#include "ylib.h"
-#include "hardware.h"
+#include <ylib.h>
+#include <hardware.h>
 
 /**
  * List structure to manage linked lists of PCBs
