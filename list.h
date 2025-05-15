@@ -74,3 +74,11 @@ int list_is_empty(list_t *list);
  * @return the first node in the list OR NULL if the list is empty
  */
 list_node_t* pop(list_t *list);
+
+/**
+ * Peaks the first node off the head of the list (if possible)
+ * 
+ * @param the list to peak the node from
+ * @return the first node in the list OR NULL if the list is empty
+ */
+list_node_t *peak(list_t *list);

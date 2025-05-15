@@ -272,3 +272,12 @@ void terminate_process(pcb_t *process, int status);
  * @param process PCB to destroy
  */
 void destroy_pcb(pcb_t *process);
+
+/**
+ * Takes the current pcb and switches it out with the next waiting pcb or the idle pcb
+ * THIS DOES NOTHING TO THE STATUS SO SET IT YOURSELF
+ * Calls KernelContextSwitch and sets the new pcb's timeslice (default if not idle, 1 if idle)
+ * 
+ * @return the new pcb being used
+ */
+pcb_t *schedule();

@@ -5,28 +5,34 @@ void (*syscall_handlers[256])(UserContext *) = {
 
     // And the syscall code with the mask to get just the code, idk why this was set up this way in yuser.h
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
-    [YALNIX_FORK & YALNIX_MASK] = SysFork,
-    [YALNIX_EXEC & YALNIX_MASK] = SysExec,
-    [YALNIX_EXIT & YALNIX_MASK] = SysExit,
-    [YALNIX_WAIT & YALNIX_MASK] = SysWait,
+    [YALNIX_FORK & YALNIX_MASK] = SysUnimplemented, //SysFork,
+    [YALNIX_EXEC & YALNIX_MASK] = SysUnimplemented, //SysExec,
+    [YALNIX_EXIT & YALNIX_MASK] = SysUnimplemented, //SysExit,
+    [YALNIX_WAIT & YALNIX_MASK] = SysUnimplemented, //SysWait,
     [YALNIX_GETPID & YALNIX_MASK] = SysGetPid,
     [YALNIX_BRK & YALNIX_MASK] = SysBrk,
     [YALNIX_DELAY & YALNIX_MASK] = SysDelay,
-    [YALNIX_TTY_READ & YALNIX_MASK] = SysTtyRead,
-    [YALNIX_TTY_WRITE & YALNIX_MASK] = SysTtyWrite,
-    [YALNIX_PIPE_INIT & YALNIX_MASK] = SysPipeInit,
-    [YALNIX_PIPE_READ & YALNIX_MASK] = SysPipeRead,
-    [YALNIX_PIPE_WRITE & YALNIX_MASK] = SysPipeWrite,
-    [YALNIX_LOCK_INIT & YALNIX_MASK] = SysLockInit,
-    [YALNIX_LOCK_ACQUIRE & YALNIX_MASK] = SysAcquire,
-    [YALNIX_LOCK_RELEASE & YALNIX_MASK] = SysRelease,
-    [YALNIX_CVAR_INIT & YALNIX_MASK] = SysCvarInit,
-    [YALNIX_CVAR_SIGNAL & YALNIX_MASK] = SysCvarSignal,
-    [YALNIX_CVAR_BROADCAST & YALNIX_MASK] = SysCvarBroadcast,
-    [YALNIX_CVAR_WAIT & YALNIX_MASK] = SysCvarWait,
-    [YALNIX_RECLAIM & YALNIX_MASK] = SysReclaim,
+    [YALNIX_TTY_READ & YALNIX_MASK] = SysUnimplemented, //SysTtyRead,
+    [YALNIX_TTY_WRITE & YALNIX_MASK] = SysUnimplemented, //SysTtyWrite,
+    [YALNIX_PIPE_INIT & YALNIX_MASK] = SysUnimplemented, // SysPipeInit,
+    [YALNIX_PIPE_READ & YALNIX_MASK] = SysUnimplemented, //SysPipeRead,
+    [YALNIX_PIPE_WRITE & YALNIX_MASK] = SysUnimplemented, //SysPipeWrite,
+    [YALNIX_LOCK_INIT & YALNIX_MASK] = SysUnimplemented, //SysLockInit,
+    [YALNIX_LOCK_ACQUIRE & YALNIX_MASK] = SysUnimplemented, //SysAcquire,
+    [YALNIX_LOCK_RELEASE & YALNIX_MASK] = SysUnimplemented, //SysRelease,
+    [YALNIX_CVAR_INIT & YALNIX_MASK] = SysUnimplemented, //SysCvarInit,
+    [YALNIX_CVAR_SIGNAL & YALNIX_MASK] = SysUnimplemented, //SysCvarSignal,
+    [YALNIX_CVAR_BROADCAST & YALNIX_MASK] = SysUnimplemented, //SysCvarBroadcast,
+    [YALNIX_CVAR_WAIT & YALNIX_MASK] = SysUnimplemented, //SysCvarWait,
+    [YALNIX_RECLAIM & YALNIX_MASK] = SysUnimplemented, //SysReclaim,
     // Add other syscall handlers here
 };
+
+void SysUnimplemented(UserContext *uctxt){
+    TracePrintf(1, "The syscall %d has not yet been implemented.\n", uctxt->code & YALNIX_MASK)
+    uctxt->regs[0] = error
+
+}
 
 
 // All of these will also check the registers to ensure that the values stored within make sense
@@ -88,28 +94,98 @@ void SysWait(UserContext *uctxt) {
 }
 
 void SysGetPID(UserContext *uctxt){
-    // Check the current process' PCB and return the PID stored within
+    TracePrintf(1, "ENTER SysGetPID.\n", (unsigned int) addr);
+    // Input of GetPID is void so no need to check args
+    // Grab the pid from the pcb in curr_process
+    int pid = current_process->pid;
+    // Put the pid of the current process into the correct register
+    uctxt->regs[0] = (u_long) pid;
+    TracePrintf(1, "EXIT SysGetPID.\n", (unsigned int) addr);
 }
 
 void SysBrk(UserContext *uctxt){
     // Get the addr from the user context
+    unsigned int addr = ((unsigned int)) uctxt->regs[0];
+    TracePrintf(1, "ENTER SysBrk. addr is %08x.\n", (unsigned int) addr);
+    pcb* curr = current_process;
+    unsigned int nbrk = UP_TO_PAGE(addr)>>PAGESHIFT;
+    unsigned int cbrk = curr->brk>>PAGESHIFT;
     // Check to see if the address is a valid spot for the break (not above the stack or below the base of the heap)
         // If not return an error
+    if  nbrk >= (DOWN_TO_PAGE(current_process->usercontext.sp)>>PAGESHIFT){
+        TracePrintf(1, "ERROR, new brk is above current stack pointer.\n");
+        uctxt->regs[0] = error;
+        return;
+    }
     // Check to see if the new brk actually has any effect on the pages (i.e. addr is in the current page below brk)
-        // if not return 0
+    if (nbrk == cbrk){
+        TracePrintf(1, "EXIT SysBrk, new brk is the same as the old brk.\n");
+        uctxt->regs[0] = 0;
+        return;
+    }
     // If brk is above the old break, allocate new pages
-        // If this fails (no more memory) return ERROR
+    if (nbrk > cbrk){
+        TracePrintf(1, "brk is being moved from %08x up to %08x.\n", curr->brk, UP_TO_PAGE(addr));
+        for(unsigned int i = cbrk; i < nbrk, i++){
+            if(curr_process->region1_pt[i].valid == 0){
+                int nf = allocateFreeFrame();
+                if(nf == error){
+                    TracePrintf(1, "ERROR, no new frames to allocate for SysBrk.\n");
+                    uctxt->regs[0] = error;
+                    return;
+                }
+                curr_process->pagetable1[i].valid = 1;
+                curr_process->pagetable1[i].prot = PROT_READ | PROT_WRITE;
+                curr_process->pagetable1[i].pfn = nf;
+            }
+        }
+        TracePrintf(1, "brk has been moved from %08x up to %08x.\n", curr->brk, UP_TO_PAGE(addr));
+    }
     // if brk is below the old break
-        // Mark the pages being freed for reclamation or delete them
-    // return 0
-
+    else{
+        TracePrintf(1, "brk has is being moved from %08x down to %08x.\n", curr->brk, UP_TO_PAGE(addr));
+        for(unsigned int i = cbrk - 1; i < nbrk, i--){
+            if(curr_process->region1_pt[i].valid == 1){
+                fn = curr_process->pagetable1[i].pfn;
+                free_frame(fn);
+                WriteRegister(REG_TLB_FLUSH, i << PAGESHIFT);
+                curr_process->pagetable1[i].valid = 0;
+                curr_process->pagetable1[i].prot = 0;
+                curr_process->pagetable1[i].pfn = 0;
+            }
+        }
+        TracePrintf(1, "brk has been moved from %08x down to %08x.\n", curr->brk, UP_TO_PAGE(addr));
+    }
+    uctxt->regs[0] = 0;
+    TracePrintf(1, "EXIT SysBrk.\n");
 }
 
 void SysDelay(UserContext *uctxt){
+    TracePrintf(1, "ENTER SysDelay.\n");
+    // Get the delay from the context, check if the delay is invalid or 0
+    int delay = (int) uctxt->regs[0];
+    if(delay < 0) {
+        TracePrintf(1, "ERROR, delay was negative %d\n", curr->pid, delay);
+        uctxt->regs[0] = error
+        return;
+    }
+    if(delay == 0) {
+        TracePrintf(1, "EXIT SysDelay, delay was 0\n", curr->pid, delay);
+        uctxt->regs[0] = 0
+        return;
+    }
     // Set the pcb's delaying status to true
-    // set the amount of delay
-    // move the process to blocked
+    pcb_t *curr = current_process;
+    curr->status = PROCESS_DEFAULT
+    add_to_delay_queue(curr, delay);
+    // Set this now when it returns later it's fine
+    uctxt->regs[0] = 0
+
+    
     // swtich processes
+    pcb_t *next = schedule();
+    uctxt = next->user_context;
+    TracePrintf(1, "EXIT SysDelay, proccess %d is waiting for %d ticks.\n", curr->pid, delay);
 }
 
 void SysTtyRead(UserContext *uctxt){

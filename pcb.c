@@ -471,3 +471,9 @@ void destroy_pcb(pcb_t *process){
     free(process);
     TracePrintf(1, "EXIT destroy_pcb.\n");
 }
+
+pcb_t *schedule(){
+    pcb_t *curr = current_process;
+    pcb_t *next = peak(ready_queue);
+    KernelContextSwitch(KCSwitch, curr, next);
+}
