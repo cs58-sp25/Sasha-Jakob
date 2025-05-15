@@ -3,42 +3,66 @@ In file included from ./list.h:10,
                  from ./pcb.h:12,
                  from kernel.h:11,
                  from kernel.c:7:
+
+Good
 ./memory.h:129:27: error: unknown type name ‘pcb_t’
   129 | int allocate_kernel_stack(pcb_t *pcb, int map_now);
       |                           ^~~~~
+
+Good
 ./memory.h:148:26: error: unknown type name ‘pcb_t’
   148 | void free_process_memory(pcb_t *proc);
       |                          ^~~~~
+
+
 ./list.h:19:5: error: unknown type name ‘list_node_t’
    19 |     list_node_t *prev;
       |     ^~~~~~~~~~~
+
+
 ./list.h:20:5: error: unknown type name ‘list_node_t’
    20 |     list_node_t *next;
       |     ^~~~~~~~~~~
+
+
 In file included from kernel.c:14:
+Good
 sync.h:8:17: error: ‘PIPE_BUFFER_LEN’ undeclared here (not in a function)
     8 |     char buffer[PIPE_BUFFER_LEN];
       |                 ^~~~~~~~~~~~~~~
+
+Good
 sync.h:15:5: error: unknown type name ‘bool’
    15 |     bool open_for_read;
       |     ^~~~
+
+Good
 sync.h:16:5: error: unknown type name ‘bool’
    16 |     bool open_for_write;
       |     ^~~~
+
+Good
 sync.h:21:5: error: unknown type name ‘bool’
    21 |     bool locked;
       |     ^~~~
+
+Should be good
 sync.h:50:31: error: ‘MAX_SYNCS’ undeclared here (not in a function); did you mean ‘MAP_SYNC’?
    50 | extern sync_obj_t *sync_table[MAX_SYNCS];  // Storing all sync objects (pipes, locks, cvars)
       |                               ^~~~~~~~~
       |                               MAP_SYNC
 sync.h: In function ‘InitPipe’:
+Should be good
 sync.h:57:1: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘int’
    57 | int ReadPipe(int pipe_id, void *buf, int len, pcb_t *curr);
       | ^~~
+
+Should be good
 sync.h:70:1: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘int’
    70 | int ReclaimSync(int id);
       | ^~~
+
+I think I fixed some of these, idk what the storage class error means though
 In file included from syscalls.h:6,
                  from kernel.c:15:
 /home/sasha/Cosc 258/yalnix_framework/include/yuser.h:10:12: error: storage class specified for parameter ‘Nop’
@@ -188,6 +212,8 @@ In file included from kernel.c:17:
 /home/sasha/Cosc 258/yalnix_framework/include/yalnix.h:111:14: error: storage class specified for parameter ‘_kernel_orig_brk’
   111 | extern void *_kernel_orig_brk;    // do not use
       |              ^~~~~~~~~~~~~~~~
+
+
 kernel.c:25:73: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘{’ token
    25 | void main(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
       |                                                                         ^

@@ -1,8 +1,9 @@
-#ifndef _SYNC_H_
-#define _SYNC_H_
-
 #include "pcb.h"
-#include "hardware.h"
+#include <hardware.h>
+#include <stdbool.h>
+
+// Magic number sorry bout it
+#define MAX_SYNC = 128
 
 typedef struct pipe {
     char buffer[PIPE_BUFFER_LEN];
@@ -52,21 +53,19 @@ extern int global_sync_counter;
 
 static int InitSyncObject(sync_type_t type, void *object, int *idp);
 
-int InitPipe(int *pipe_idp)
-void ShiftPipeBuffer(pipe_t *pipe, int len)
-int ReadPipe(int pipe_id, void *buf, int len, pcb_t *curr);
-void UnblockOneReader(pipe_t *pipe);
-int WritePipe(int pipe_id, void *buf, int len);
+int SyncInitPipe(int *pipe_idp);
+void SyncShiftPipeBuffer(pipe_t *pipe, int len);
+int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr);
+void SyncUnblockOneReader(pipe_t *pipe);
+int SyncWritePipe(int pipe_id, void *buf, int len);
 
-int InitLock(int *lock_idp);
-int LockAcquire(int lock_id);
-int LockRelease(int lock_id);
+int SyncInitLock(int *lock_idp);
+int SyncLockAcquire(int lock_id);
+int SyncLockRelease(int lock_id);
 
-int InitCvar(int *cvar_idp);
-int CvarSignal(int cvar_id);
-int CvarBroadcast(int cvar_id);
-int CvarWait(int cvar_id, int lock_id)
+int SyncInitCvar(int *cvar_idp);
+int SyncCvarSignal(int cvar_id);
+int SyncCvarBroadcast(int cvar_id);
+int SyncCvarWait(int cvar_id, int lock_id);
 
-int ReclaimSync(int id);
-
-#endif
+int SyncReclaimSync(int id);

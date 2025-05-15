@@ -5,7 +5,6 @@ void (*syscall_handlers[256])(UserContext *) = {
 
     // And the syscall code with the mask to get just the code, idk why this was set up this way in yuser.h
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
-<<<<<<< HEAD
     [YALNIX_FORK & YALNIX_MASK] = SysUnimplemented, //SysFork,
     [YALNIX_EXEC & YALNIX_MASK] = SysUnimplemented, //SysExec,
     [YALNIX_EXIT & YALNIX_MASK] = SysUnimplemented, //SysExit,
@@ -35,31 +34,6 @@ void SysUnimplemented(UserContext *uctxt){
 
 }
 
-=======
-    [YALNIX_FORK & YALNIX_MASK] = SysFork,
-    [YALNIX_EXEC & YALNIX_MASK] = SysExec,
-    [YALNIX_EXIT & YALNIX_MASK] = SysExit,
-    [YALNIX_WAIT & YALNIX_MASK] = SysWait,
-    [YALNIX_GETPID & YALNIX_MASK] = SysGetPid,
-    [YALNIX_BRK & YALNIX_MASK] = SysBrk,
-    [YALNIX_DELAY & YALNIX_MASK] = SysDelay,
-    [YALNIX_TTY_READ & YALNIX_MASK] = SysTtyRead,
-    [YALNIX_TTY_WRITE & YALNIX_MASK] = SysTtyWrite,
-    [YALNIX_PIPE_INIT & YALNIX_MASK] = SysPipeInit,
-    [YALNIX_PIPE_READ & YALNIX_MASK] = SysPipeRead,
-    [YALNIX_PIPE_WRITE & YALNIX_MASK] = SysPipeWrite,
-    [YALNIX_LOCK_INIT & YALNIX_MASK] = SysLockInit,
-    [YALNIX_LOCK_ACQUIRE & YALNIX_MASK] = SysAcquire,
-    [YALNIX_LOCK_RELEASE & YALNIX_MASK] = SysRelease,
-    [YALNIX_CVAR_INIT & YALNIX_MASK] = SysCvarInit,
-    [YALNIX_CVAR_SIGNAL & YALNIX_MASK] = SysCvarSignal,
-    [YALNIX_CVAR_BROADCAST & YALNIX_MASK] = SysCvarBroadcast,
-    [YALNIX_CVAR_WAIT & YALNIX_MASK] = SysCvarWait,
-    [YALNIX_RECLAIM & YALNIX_MASK] = SysReclaim,
-    // Add other syscall handlers here
-};
-
->>>>>>> e118d03 (putting everything back into the repo)
 
 // All of these will also check the registers to ensure that the values stored within make sense
 // If not they will return an error.
@@ -120,7 +94,6 @@ void SysWait(UserContext *uctxt) {
 }
 
 void SysGetPID(UserContext *uctxt){
-<<<<<<< HEAD
     TracePrintf(1, "ENTER SysGetPID.\n", (unsigned int) addr);
     // Input of GetPID is void so no need to check args
     // Grab the pid from the pcb in curr_process
@@ -128,14 +101,10 @@ void SysGetPID(UserContext *uctxt){
     // Put the pid of the current process into the correct register
     uctxt->regs[0] = (u_long) pid;
     TracePrintf(1, "EXIT SysGetPID.\n", (unsigned int) addr);
-=======
-    // Check the current process' PCB and return the PID stored within
->>>>>>> e118d03 (putting everything back into the repo)
 }
 
 void SysBrk(UserContext *uctxt){
     // Get the addr from the user context
-<<<<<<< HEAD
     unsigned int addr = ((unsigned int)) uctxt->regs[0];
     TracePrintf(1, "ENTER SysBrk. addr is %08x.\n", (unsigned int) addr);
     pcb* curr = current_process;
@@ -233,25 +202,6 @@ void SysDelay(UserContext *uctxt){
     }
     
     TracePrintf(1, "EXIT SysDelay, proccess %d is waiting for %d ticks.\n", curr->pid, delay);
-=======
-    // Check to see if the address is a valid spot for the break (not above the stack or below the base of the heap)
-        // If not return an error
-    // Check to see if the new brk actually has any effect on the pages (i.e. addr is in the current page below brk)
-        // if not return 0
-    // If brk is above the old break, allocate new pages
-        // If this fails (no more memory) return ERROR
-    // if brk is below the old break
-        // Mark the pages being freed for reclamation or delete them
-    // return 0
-
-}
-
-void SysDelay(UserContext *uctxt){
-    // Set the pcb's delaying status to true
-    // set the amount of delay
-    // move the process to blocked
-    // swtich processes
->>>>>>> e118d03 (putting everything back into the repo)
 }
 
 void SysTtyRead(UserContext *uctxt){
