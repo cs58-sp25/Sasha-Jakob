@@ -470,10 +470,13 @@ void destroy_pcb(pcb_t *process){
     // Free the PCB structure itself
     free(process);
     TracePrintf(1, "EXIT destroy_pcb.\n");
+<<<<<<< HEAD
 }
 
 pcb_t *schedule(){
     pcb_t *curr = current_process;
     pcb_t *next = peak(ready_queue);
     KernelContextSwitch(KCSwitch, curr, next);
+=======
+>>>>>>> e118d03 (putting everything back into the repo)
 }

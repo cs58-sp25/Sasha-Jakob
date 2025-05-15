@@ -7,11 +7,6 @@
 #include "ylib.h"
 #include "hardware.h"
 
-typedef struct list_node {
-    struct list_node *prev;
-    struct list_node *next;
-} list_node_t;
-
 /**
  * List structure to manage linked lists of PCBs
  */
@@ -19,6 +14,12 @@ typedef struct list {
     list_node_t head;  // Sentinel node (not a real element)
     int count;         // Number of nodes in the list
 } list_t;
+
+
+typedef struct list_node {
+    struct list_node *prev;
+    struct list_node *next;
+} list_node_t;
 
 /**
  * Initializes a new list
@@ -74,11 +75,3 @@ int list_is_empty(list_t *list);
  * @return the first node in the list OR NULL if the list is empty
  */
 list_node_t* pop(list_t *list);
-
-/**
- * Peaks the first node off the head of the list (if possible)
- * 
- * @param the list to peak the node from
- * @return the first node in the list OR NULL if the list is empty
- */
-list_node_t *peak(list_t *list);

@@ -271,6 +271,7 @@ void terminate_process(pcb_t *process, int status);
  *
  * @param process PCB to destroy
  */
+<<<<<<< HEAD
 void destroy_pcb(pcb_t *process);
 
 /**
@@ -281,3 +282,6 @@ void destroy_pcb(pcb_t *process);
  * @return the new pcb being used
  */
 pcb_t *schedule();
+=======
+void destroy_pcb(pcb_t *process);
+>>>>>>> e118d03 (putting everything back into the repo)
