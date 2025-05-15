@@ -20,11 +20,6 @@
 #include "list.h"
 #include "sync.h"
 
-
-/* Global variables for kernel state */
-pcb_t *current_process;  // Currently running process
-
-
 void main(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     // Zero-initialize global variables to prevent undefined behavior
     current_process = NULL;

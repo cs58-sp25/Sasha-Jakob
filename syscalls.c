@@ -176,15 +176,31 @@ void SysDelay(UserContext *uctxt){
     }
     // Set the pcb's delaying status to true
     pcb_t *curr = current_process;
-    curr->status = PROCESS_DEFAULT
-    add_to_delay_queue(curr, delay);
-    // Set this now when it returns later it's fine
-    uctxt->regs[0] = 0
-
     
-    // swtich processes
-    pcb_t *next = schedule();
-    uctxt = next->user_context;
+    // Look at the ready queue to see if another exists, currently this should just be the idle process
+    // Eventually idle should be stored separately maybe and returned if no ready processes exist.
+    pcb_t *next == peak(ready_queue);
+    if(next != NULL){
+        // Set return to 0 for when the process is done delaying
+        uctxt->regs[0] = 0;
+        // Set the current process's UC to the given user context
+        curr->user_context = uctxt;
+        // Set tHE current process's status to the default
+        curr->status = PROCESS_DEFAULT;
+        // Add the process to the delay queue
+        add_to_delay_queue(curr, delay);
+
+        // Schedule another process
+        next = schedule();
+        // Set the uctxt to the newly scheduled processes uc
+        uctxt = next->user_context;
+    } else {
+        TracePrintf(1, "ERROR, there was no other process to put in ready.\n");
+        uctxt->regs[0] = error;
+        return;
+
+    }
+    
     TracePrintf(1, "EXIT SysDelay, proccess %d is waiting for %d ticks.\n", curr->pid, delay);
 }
 
@@ -298,4 +314,15 @@ void SysReclaim(UserContext *uctxt){
     // pass the values to ReclaimSync from sync.c
     // return the return value of release
 
+}
+
+pcb_t *schedule(){
+    pcb_t *curr = current_process;
+    pcb_t *next = pop(ready_queue);
+    KernelContext kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
+    //current_process should already be put into a different queue at this point
+    next->status = PROCESS_RUNNING;
+    next->run_time = 0;
+    current_process = next;
+    return next;
 }
