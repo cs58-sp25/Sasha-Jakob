@@ -1,6 +1,11 @@
 {
     "files.associations": {
-        "memory.h": "c",
+        "hardware.h": "c",
+        "kernel.h": "c",
+        "ctype.h": "c",
+        "list.h": "c",
+        "yalnix.h": "c",
+        "ykernel.h": "c",
         "ylib.h": "c"
     }
 }

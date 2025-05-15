@@ -3,11 +3,13 @@
  * File: pcb.h
  * Description: PCB header file for Yalnix OS
  */
+
+#ifndef _PCB_H_
+#define _PCB_H_ 
+
 #include "hardware.h"
-#include "kernel.h"
-#include "list.h"
-#include "memory.h"
 #include "ylib.h"
+#include "list.h"
 
 /**
  * Process Control Block structure
@@ -271,17 +273,6 @@ void terminate_process(pcb_t *process, int status);
  *
  * @param process PCB to destroy
  */
-<<<<<<< HEAD
 void destroy_pcb(pcb_t *process);
 
-/**
- * Takes the current pcb and switches it out with the next waiting pcb or the idle pcb
- * THIS DOES NOTHING TO THE STATUS SO SET IT YOURSELF
- * Calls KernelContextSwitch and sets the new pcb's timeslice (default if not idle, 1 if idle)
- * 
- * @return the new pcb being used
- */
-pcb_t *schedule();
-=======
-void destroy_pcb(pcb_t *process);
->>>>>>> e118d03 (putting everything back into the repo)
+#endif /* _PCB_H_ */

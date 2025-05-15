@@ -4,6 +4,9 @@
  * Description: Kernel header file for Yalnix kernel
  */
 
+#ifndef _KERNEL_H_
+#define _KERNEL_H_
+
 #include <hardware.h>
 #include <pcb.h>
 
@@ -38,7 +41,7 @@ void init_interrupt_vector(void);
  *
  * @return Pointer to idle PCB, or NULL on failure
  */
-pcb_t *create_idle_process(UserContext *uctxt)
+pcb_t *create_idle_process(UserContext *uctxt);
 
 
 /**
@@ -93,3 +96,5 @@ void init_lists(void);
  * are ready to run. It calls Pause() to yield the CPU.
  */
 void DoIdle(void);
+
+#endif /* _KERNEL_H_ */

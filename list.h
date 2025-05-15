@@ -2,6 +2,10 @@
  * List node structure for intrusive linked lists
  * Used to link PCBs in various queues
  */
+
+#ifndef LIST_H
+#define LIST_H
+
 #include <stddef.h>
 #include "memory.h"
 #include "ylib.h"
@@ -10,16 +14,16 @@
 /**
  * List structure to manage linked lists of PCBs
  */
+
+typedef struct list_node {
+    list_node_t *prev;
+    list_node_t *next;
+} list_node_t;
+
 typedef struct list {
     list_node_t head;  // Sentinel node (not a real element)
     int count;         // Number of nodes in the list
 } list_t;
-
-
-typedef struct list_node {
-    struct list_node *prev;
-    struct list_node *next;
-} list_node_t;
 
 /**
  * Initializes a new list
@@ -75,3 +79,6 @@ int list_is_empty(list_t *list);
  * @return the first node in the list OR NULL if the list is empty
  */
 list_node_t* pop(list_t *list);
+
+
+#endif /* LIST_H */

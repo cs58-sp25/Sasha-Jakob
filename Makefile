@@ -13,7 +13,7 @@ K_SRC_DIR = .
 
 # What are the kernel c and include files?
 K_SRCS = kernel.c memory.c pcb.c
-K_INCS = kernel.h memory.h pcb.h ykernel.h yuser.h ylib.h
+K_INCS = kernel.h memory.h pcb.h ykernel.h yuser.h ylib.h hardware.h
 
 # Where's your user source?
 U_SRC_DIR = ./test
@@ -54,7 +54,7 @@ CC = gcc
 
 DDIR58 = ${YALNIX_FRAMEWORK}
 LIBDIR = $(DDIR58)/lib
-INCDIR = $(DDIR58)/include
+INCDIR = "$(DDIR58)/include"
 ETCDIR = $(DDIR58)/etc
 
 # any extra loading flags...
