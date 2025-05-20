@@ -1,6 +1,5 @@
 #include "sync.h"
-
-#define MAX_SYNCS 128
+// Might have to change to starting this in kernel.c and setting sync counter to 0
 extern sync_obj_t *sync_table[MAX_SYNCS];  // Storing all sync objects (pipes, locks, cvars)
 extern int global_sync_counter;
 
@@ -16,7 +15,7 @@ static int InitSyncObject(sync_type_t type, void *object, int *idp){
     // return 0
 }
 
-int InitPipe(int *pipe_idp){
+int SyncInitPipe(int *pipe_idp){
     // If there are too many syncing objects return an error
     // Allocate the new pipe at *pipe_id
         // If it fails return error
@@ -25,7 +24,7 @@ int InitPipe(int *pipe_idp){
     // Return the return of InitSyncObject
 }
 
-void ShiftPipeBuffer(pipe_t *pipe, int len){
+void SyncShiftPipeBuffer(pipe_t *pipe, int len){
     // Check if it's a valid shift
         // if not just return
     
@@ -39,7 +38,7 @@ void ShiftPipeBuffer(pipe_t *pipe, int len){
 // blocks if nothing is available
 // otherwise reads whatever is and returns
 
-int ReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
+int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
     // Get the pipe from the id
     // check to see if the pipe is valid
         // if not return error
@@ -58,7 +57,7 @@ int ReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
     // return bytes to read
 }
 
-void UnblockOneReader(pipe_t *pipe){
+void SyncUnblockOneReader(pipe_t *pipe){
     //C heck to see if there are any blocked readers
         // if not return
     // Get the first reader in the queue (a pcb)
@@ -72,7 +71,7 @@ void UnblockOneReader(pipe_t *pipe){
 
 // Not a blocking write
 // writes whatever it can and then returns
-int WritePipe(int pipe_id, void *buf, int len){
+int SyncWritePipe(int pipe_id, void *buf, int len){
     // Get the pipe from the id
     // check to see if the pipe is valid
         // if not return error
@@ -86,7 +85,7 @@ int WritePipe(int pipe_id, void *buf, int len){
     // return the number of bytes written
 }
 
-int InitLock(int *lock_idp){
+int SyncInitLock(int *lock_idp){
     // malloc the lock
         // if it fails return error
     // initialize the lock fields
@@ -95,7 +94,7 @@ int InitLock(int *lock_idp){
 
 }
 
-int LockAcquire(int lock_id){
+int SyncLockAcquire(int lock_id){
     // Check to see if the lock is valid
         // If not throw and error
     
@@ -113,7 +112,7 @@ int LockAcquire(int lock_id){
 
 }
 
-int LockRelease(int lock_id){
+int SyncLockRelease(int lock_id){
     // Check to see if the lock is valid
         // If not throw and error
     
@@ -129,7 +128,7 @@ int LockRelease(int lock_id){
 
 }
 
-int InitCvar(int *lock_idp){
+int SyncInitCvar(int *lock_idp){
     // malloc the cvar
         // if it fails return error
     // initialize the cvar fields
@@ -138,7 +137,7 @@ int InitCvar(int *lock_idp){
 
 }
 
-int CvarWait(int cvar_id, int lock_id){
+int SyncCvarWait(int cvar_id, int lock_id){
     // Check to see if the cvar is valid
         // if it fails return error
     // Check to see if the lock is valid
@@ -159,7 +158,7 @@ int CvarWait(int cvar_id, int lock_id){
     // return 0
 }
 
-int CvarSignal(int cvar_id){
+int SyncCvarSignal(int cvar_id){
     // Check to see if the cvar is valid
         // if it fails return error
 
@@ -171,7 +170,7 @@ int CvarSignal(int cvar_id){
     // return 0
 }
 
-int CvarBroadcast(int cvar_id){
+int SyncCvarBroadcast(int cvar_id){
     // Check to see if the cvar is valid
         // if it fails return error
     
@@ -188,7 +187,7 @@ int CvarBroadcast(int cvar_id){
 
 
 
-int ReclaimSync(int id){
+int SyncReclaimSync(int id){
     // check if it's a valid id
         // if not return error
     // get the object from the table

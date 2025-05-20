@@ -90,7 +90,7 @@ int list_is_empty(list_t *pop) {
     TracePrintf(1, "ENTER list_is_empty.\n");
     if (list == NULL) {
         TracePrintf(1, "ERROR, The list to insert in to does not exist.\n");
-        return; 
+        return error; 
     }
     TracePrintf(1, "EXIT list_is_empty.\n");
     return list->count == 0;
@@ -114,4 +114,13 @@ list_node_t *pop(list_t *list) {
 
     TracePrintf(1, "EXIT pop.\n");
     return ret;
+}
+
+list_node_t *peak(list_t *list){
+    if(list_is_empty(list)){
+        TracePrintf(1, "ERROR, The list was empty or the list didn't exist (last trace would clarify).\n");
+        return NULL;
+    }
+
+    return list->head.next;
 }

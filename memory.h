@@ -8,7 +8,7 @@
 #define _MEMORY_H_
 
 #include <hardware.h>
-#include <pcb.h>
+#include "pcb.h"
 
 
 extern int vm_enabled;  // Flag indicating if virtual memory is enabled
