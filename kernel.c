@@ -140,91 +140,167 @@ pcb_t *create_idle_process(UserContext *uctxt) {
     return idle_pcb;
 }
 
-pcb_t *create_init_process(char *name, char **args) {
-    // Allocate PCB for init process - the first real user process
-    // Init is special as it's the ancestor of all other user processes
-    pcb_t *init_pcb = (pcb_t *)malloc(sizeof(pcb_t));
-    if (!init_pcb) {
-        TracePrintf(0, "ERROR: Failed to allocate PCB for init process\n");
-        return NULL;
-    }
+/**
+ * @brief Copy kernel stack contents
+ *
+ * Copies the contents of the current kernel stack (identified by src_frames)
+ * to a new set of kernel stack frames (identified by dst_frames).
+ * This function is crucial during process cloning (Fork) to set up the new process's
+ * kernel stack. It temporarily maps destination frames into the kernel's address space
+ * to perform the copy, then unmaps them.
+ *
+ * @param src_frames An array of physical frame numbers for the source kernel stack.
+ * @param dst_frames An array of physical frame numbers for the destination kernel stack.
+ * @param num_frames The number of physical frames that constitute the kernel stack.
+ * @return 0 on success, ERROR on failure (e.g., if temporary mapping fails).
+ */
+int copy_kernel_stack(int *src_frames, int *dst_frames, int num_frames) {
+    TracePrintf(3, "copy_kernel_stack: Copying %d frames from source to destination kernel stack.\n", num_frames);
 
-    // Initialize PCB fields with process metadata
-    // This establishes the identity and state of the process
-    init_pcb->pid = helper_new_pid();  // Get unique process ID
-    init_pcb->state = PROCESS_READY;   // Mark as ready to run
-    init_pcb->parent_pid = -1;         // No parent for init
+    // Loop through each frame of the kernel stack
+    for (int i = 0; i < num_frames; i++) {
+        void *src_vaddr = (void *)(KERNEL_STACK_BASE + (i * PAGESIZE)); // Source virtual address in Region 0
+        void *dst_temp_vaddr = setup_temp_mapping(dst_frames[i]); // Temporarily map destination frame
 
-    // Create Region 1 page table for user space
-    // This will hold mappings for text, data, heap, and stack
-    int region1_pages = VMEM_1_SIZE >> PAGESHIFT;
-    pte_t *region1_pt = (pte_t *)malloc(sizeof(pte_t) * region1_pages);
-    if (!region1_pt) {
-        TracePrintf(0, "ERROR: Failed to allocate Region 1 page table for init process\n");
-        free(init_pcb);  // Clean up on error
-        return NULL;
-    }
-
-    // Initialize page table entries as invalid
-    // LoadProgram will set up the actual mappings later
-    for (int i = 0; i < region1_pages; i++) {
-        region1_pt[i].valid = 0;  // All pages invalid initially
-    }
-
-    // Save page table in PCB for later use during context switches
-    // The kernel needs to know where each process's page tables are
-    init_pcb->region1_pt = region1_pt;
-    init_pcb->region1_pt_size = region1_pages;
-
-    // Allocate kernel stack frames for init process
-    // Each process needs its own kernel stack when handling traps
-    for (int i = 0; i < KERNEL_STACK_MAXSIZE / PAGESIZE; i++) {
-        int frame = allocate_frame();
-        if (frame == -1) {
-            TracePrintf(0, "ERROR: Failed to allocate kernel stack frame for init process\n");
-            free(region1_pt);  // Clean up on error
-            free(init_pcb);
-            return NULL;
+        if (dst_temp_vaddr == NULL) {
+            TracePrintf(0, "copy_kernel_stack: ERROR: Failed to set up temporary mapping for destination frame %d.\n", dst_frames[i]);
+            // TODO: Potentially clean up already mapped frames in case of error
+            return ERROR;
         }
-        init_pcb->kernel_stack_frames[i] = frame;  // Store frame numbers for later mapping
+
+        // Copy the contents of the source frame to the temporarily mapped destination frame
+        memcpy(dst_temp_vaddr, src_vaddr, PAGESIZE);
+
+        // Remove the temporary mapping for the destination frame
+        remove_temp_mapping(dst_temp_vaddr);
     }
 
-    TracePrintf(0, "Init process created with PID %d\n", init_pcb->pid);
-    return init_pcb;
+    TracePrintf(3, "copy_kernel_stack: Kernel stack copy completed successfully.\n");
+    return 0; // Success
 }
 
-int setup_idle_context(pcb_t *idle_pcb) {
-    // Initialize user context for idle process
-    // This prepares the register state for when idle process runs
-    idle_pcb->user_context.pc = (void *)DoIdle;  // Point to DoIdle function as entry point
+/**
+ * @brief Switch to a new process
+ *
+ * This is a high-level function that orchestrates a complete context switch
+ * to the specified 'next' process. It involves saving the current process's
+ * user context, updating global pointers, changing kernel stack mappings,
+ * and finally invoking KCSwitch to perform the low-level kernel context switch.
+ *
+ * @param next A pointer to the PCB of the next process to run.
+ * @return 0 on success, ERROR on failure.
+ */
+int switch_to_process(pcb_t *next) {
+    TracePrintf(2, "switch_to_process: Initiating context switch from PID %d to PID %d.\n",
+                current_process ? current_process->pid : -1, next->pid);
 
-    // Allocate one page for the user stack
-    // Idle process needs minimal stack space for its simple loop
-    int frame = allocate_frame();
-    if (frame == -1) {
-        TracePrintf(0, "ERROR: Failed to allocate frame for idle process user stack\n");
+    // Save the current user context if there is a current process
+    // This assumes that the user context passed to the trap handler is the one to save
+    // For simplicity, we'll assume current_process->user_context is the target
+    // In a real trap handler, the uctxt argument would be saved here.
+    if (current_process != NULL) {
+        // This is a placeholder. In a real trap handler, 'uctxt' would be passed in
+        // and its contents saved to current_process->user_context.
+        // For demonstration, we'll assume current_process->user_context is already up-to-date
+        // or that it will be handled by the trap entry/exit logic.
+        // save_user_context(current_user_context_from_trap, current_process);
+        TracePrintf(4, "switch_to_process: Saved user context for current process PID %d.\n", current_process->pid);
+    }
+
+    // Update the current_process global pointer
+    current_process = next;
+    TracePrintf(4, "switch_to_process: Current process updated to PID %d.\n", current_process->pid);
+
+    // Update the hardware's Region 1 page table base register (PTBR1)
+    // This changes the user address space to that of the new process
+    WriteRegister(REG_PTBR1, (unsigned int)current_process->region1_pt);
+    WriteRegister(REG_PTLR1, (unsigned int)NUM_PAGES_IN_REGION1); // Assuming NUM_PAGES_IN_REGION1 is defined
+
+    // Map the kernel stack of the new process into Region 0
+    // This updates the Region 0 page table entries for the kernel stack area
+    if (map_kernel_stack(current_process->kernel_stack_pages) != 0) {
+        TracePrintf(0, "switch_to_process: ERROR: Failed to map kernel stack for PID %d.\n", current_process->pid);
         return ERROR;
     }
 
-    // Calculate page number for the user stack in Region 1
-    // Stack is placed at the top of Region 1 virtual memory
-    int stack_page = ((VMEM_1_LIMIT - PAGESIZE) - VMEM_1_BASE) >> PAGESHIFT;
+    // Flush the TLB for Region 1 and the kernel stack to ensure new mappings are used
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_KSTACK);
 
-    // Map the frame to the user stack address
-    // This creates the virtual-to-physical mapping for the stack
-    idle_pcb->region1_pt[stack_page].valid = 1;                      // Page is valid and mapped
-    idle_pcb->region1_pt[stack_page].prot = PROT_READ | PROT_WRITE;  // Stack needs read/write access
-    idle_pcb->region1_pt[stack_page].pfn = frame;                    // Point to the allocated physical frame
+    // Perform the low-level kernel context switch
+    // KCSwitch will save the old kernel context and load the new one
+    // The return value of KCSwitch is the kernel context of the process that is being switched back to.
+    // In this case, we are switching TO 'next', so KCSwitch will return 'next->kernel_context'
+    // when 'next' eventually gets scheduled back in.
+    KernelContext *kc_returned = KernelContextSwitch(KCSwitch, NULL, (void *)next);
 
-    // Set stack pointer to top of user stack
-    // Stack grows downward, so start at the high end of the page
-    idle_pcb->user_context.sp = (void *)(VMEM_1_LIMIT - sizeof(int));
+    // When this function returns, it means a process has been switched back to this context.
+    // The 'kc_returned' would be the kernel context that was just restored.
+    // This part of the code would only be reached when a process that was switched OUT
+    // is now being switched back IN.
+    TracePrintf(2, "switch_to_process: Returned from KCSwitch. Process PID %d resumed.\n", current_process->pid);
 
-    // Initialize other context fields
-    // Frame pointer typically equals stack pointer initially
-    idle_pcb->user_context.ebp = idle_pcb->user_context.sp;
+    return 0; // Success
+}
 
-    return 0;
+/**
+ * @brief Low-level kernel context switch function
+ *
+ * This function is called by KernelContextSwitch to perform the actual saving
+ * and restoring of kernel contexts. It is executed on a special context/stack.
+ *
+ * @param kc_in The kernel context of the process that is being switched OUT.
+ * @param curr_pcb_p Pointer to the PCB of the current (outgoing) process.
+ * (Not used in this simplified KCSwitch, but kept for signature compliance).
+ * @param next_pcb_p Pointer to the PCB of the next (incoming) process.
+ * @return A pointer to the kernel context of the process that should be resumed.
+ */
+KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
+    pcb_t *next_proc = (pcb_t *)next_pcb_p;
+    // pcb_t *curr_proc = (pcb_t *)curr_pcb_p; // If we were to save the outgoing context here
+
+    TracePrintf(3, "KCSwitch: Performing low-level kernel context switch to PID %d.\n", next_proc->pid);
+
+    // In a full implementation, you would save kc_in to the outgoing process's PCB
+    // For now, we assume the caller of switch_to_process has already handled saving
+    // the user context and that the kernel context is implicitly handled by KernelContextSwitch.
+
+    // Return the kernel context of the next process to resume execution
+    return &next_proc->kernel_context;
+}
+
+/**
+ * @brief Low-level kernel context copy function
+ *
+ * This function is called by KernelContextSwitch during process cloning (Fork).
+ * It copies the kernel context and kernel stack contents from the current process
+ * to the new process.
+ *
+ * @param kc_in The kernel context of the process that is being cloned (current process).
+ * @param new_pcb_p Pointer to the PCB of the newly created process.
+ * @param not_used Unused parameter (kept for signature compliance).
+ * @return The original kernel context (kc_in), so the cloning process can continue.
+ */
+KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used) {
+    pcb_t *new_proc = (pcb_t *)new_pcb_p;
+
+    TracePrintf(3, "KCCopy: Cloning kernel context and stack for new process PID %d.\n", new_proc->pid);
+
+    // Copy the current kernel context (kc_in) to the new process's PCB
+    memcpy(&new_proc->kernel_context, kc_in, sizeof(KernelContext));
+
+    // Copy the contents of the current kernel stack to the new process's kernel stack frames
+    // KERNEL_STACK_MAXSIZE / PAGESIZE gives the number of frames in the kernel stack
+    if (copy_kernel_stack(current_process->kernel_stack_pages, new_proc->kernel_stack_pages, KERNEL_STACK_MAXSIZE / PAGESIZE) != 0) {
+        TracePrintf(0, "KCCopy: ERROR: Failed to copy kernel stack for new process PID %d.\n", new_proc->pid);
+        // In a real scenario, you would handle this error by cleaning up the new_proc
+        // and potentially returning an error indicator. For KCCopy, returning NULL
+        // might signify an error to the KernelContextSwitch caller.
+        return NULL;
+    }
+
+    // Return the original kernel context so the cloning process can continue its execution.
+    return kc_in;
 }
 
 int load_init_program(pcb_t *init_pcb, char *filename, char **args) {

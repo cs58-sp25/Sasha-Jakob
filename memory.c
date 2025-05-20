@@ -12,20 +12,36 @@ void *kernel_brk = NULL;  // Current kernel break address
 void *user_brk = NULL;    // Current user break address
 int frame_bitMap[NUM_VPN] = {0};
 
+
 int allocate_frame(void) {
-    // If no free frames remain, return error (-1)
-    // Search bitmap for first available frame (bit = 0)
-    // Mark frame as used (set bit to 1)
-    // Decrement num_free_frames counter
-    // Return the physical frame number (pfn)
+    // Iterate through the frame_bitMap to find a free frame
+    for (int i = 0; i < NUM_VPN; i++) { // Assuming NUM_VPN is the total number of physical frames
+        if (frame_bitMap[i] == 0) { // If the frame is free (0 means free, 1 means used)
+            frame_bitMap[i] = 1;    // Mark it as used
+            TracePrintf(5, "allocate_frame: Allocated frame %d\n", i);
+            return i;               // Return the physical frame number
+        }
+    }
+    TracePrintf(0, "allocate_frame: ERROR: No free physical frames available\n");
+    return -1; // No free frames
 }
 
 
 void free_frame(int pfn) {
-    // Validate pfn is within range
-    // Check if frame is currently marked as used
-    // Mark frame as free (set bit to 0)
-    // Increment num_free_frames counter
+    // Basic validation for the physical frame number
+    if (pfn < 0 || pfn >= NUM_VPN) { // Assuming NUM_VPN is the total number of physical frames
+        TracePrintf(0, "free_frame: ERROR: Invalid physical frame number %d\n", pfn);
+        return;
+    }
+
+    // Check if the frame was actually allocated before freeing
+    if (frame_bitMap[pfn] == 0) {
+        TracePrintf(0, "free_frame: WARNING: Attempted to free an already free frame %d\n", pfn);
+        return;
+    }
+
+    frame_bitMap[pfn] = 0; // Mark the frame as free
+    TracePrintf(5, "free_frame: Freed frame %d\n", pfn);
 }
 
 int SetKernelBrk(void *addr) {
@@ -282,48 +298,64 @@ struct pte *get_region0_pt(void) {
     return region0_pt;
 }
 
-void enable_virtual_memory(void) {
-    // Write 1 to REG_VM_ENABLE register
-    // Set vm_enabled flag to 1
-    // After this call, all addresses are interpreted as virtual
+
+/**
+ * @brief Setup temporary mapping for kernel stack
+ *
+ * Creates a temporary mapping in Region 0 to access a physical frame.
+ * This is used when the kernel needs to directly access the contents of a
+ * physical frame that is not normally mapped into its address space (e.g.,
+ * when copying kernel stacks during Fork). The mapping is placed at a
+ * predefined temporary virtual address (e.g., just below the kernel stack).
+ *
+ * @param pfn Physical frame number to map.
+ * @return Virtual address of the temporary mapping on success, NULL on failure.
+ */
+void *setup_temp_mapping(int pfn) {
+    // Define a virtual address for temporary mapping. This should be a page
+    // that is guaranteed to be unused and available for temporary mappings.
+    // For example, one page below the kernel stack base.
+    void *temp_vaddr = (void *)(KERNEL_STACK_BASE - PAGESIZE);
+    struct pte *region0_pt = get_region0_pt(); // Get pointer to Region 0 page table
+
+    TracePrintf(5, "setup_temp_mapping: Mapping pfn %d to temporary vaddr %p.\n", pfn, temp_vaddr);
+
+    // Check if the temporary virtual address is already mapped
+    // This is a simplified check; a more robust solution would track temporary mappings
+    // or use a dedicated temporary mapping page.
+    if (get_physical_frame(temp_vaddr, region0_pt) != -1) {
+        TracePrintf(0, "setup_temp_mapping: ERROR: Temporary mapping vaddr %p is already in use.\n", temp_vaddr);
+        return NULL; // Or unmap it first if it's safe to do so
+    }
+
+    // Map the physical frame to the temporary virtual address in Region 0
+    map_page(region0_pt, (int)((unsigned int)temp_vaddr >> PAGESHIFT), pfn, PROT_READ | PROT_WRITE);
+
+    // Flush TLB for the specific temporary mapping to ensure consistency
+    WriteRegister(REG_TLB_FLUSH, (unsigned int)temp_vaddr);
+
+    return temp_vaddr;
 }
 
-int is_valid_user_pointer(void *addr, int len, int prot) {
-    // Check if address is in user space (Region 1)
-    // Calculate start and end virtual page numbers
-    // For each page in range:
-    //   Check if page is mapped in current process's Region 1 page table
-    //   Check if page has requested protection bits
-    // Return 1 if all checks pass, 0 otherwise
-}
+/**
+ * @brief Remove temporary mapping
+ *
+ * Removes a temporary mapping created by `setup_temp_mapping`.
+ * This function unmaps the specified virtual address from Region 0 and
+ * flushes the corresponding TLB entry.
+ *
+ * @param addr Virtual address of the temporary mapping to unmap.
+ */
+void remove_temp_mapping(void *addr) {
+    struct pte *region0_pt = get_region0_pt(); // Get pointer to Region 0 page table
 
-int is_valid_user_string(char *str, int max_len) {
-    // Check if string pointer is in user space
-    // Safely read characters until null terminator or max_len
-    // Return string length (including null) if valid, -1 if invalid
-}
+    TracePrintf(5, "remove_temp_mapping: Unmapping temporary vaddr %p.\n", addr);
 
-int copy_from_user(void *dst, void *src, int len) {
-    // Validate src pointer is in user space and readable
-    // Validate length is reasonable
-    // Copy data from user space to kernel space
-    // Handle case where data spans multiple pages
-    // Return 0 on success, ERROR on failure
-}
+    // Unmap the virtual page
+    unmap_page(region0_pt, (int)((unsigned int)addr >> PAGESHIFT));
 
-int copy_to_user(void *dst, void *src, int len) {
-    // Validate dst pointer is in user space and writable
-    // Validate length is reasonable
-    // Copy data from kernel space to user space
-    // Handle case where data spans multiple pages
-    // Return 0 on success, ERROR on failure
-}
-
-int get_physical_frame(void *addr, struct pte *pt) {
-    // Calculate virtual page number from address
-    // If pt is NULL, use current process's page table
-    // Check if virtual page is mapped (valid bit set)
-    // Return physical frame number if mapped, -1 otherwise
+    // Flush TLB for the specific temporary mapping
+    WriteRegister(REG_TLB_FLUSH, (unsigned int)addr);
 }
 
 // TODO: create kernel_malloc, kernel_free, and perhaps memset

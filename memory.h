@@ -19,17 +19,23 @@ extern int frame_bitMap[NUM_VPN];  // Bitmap to track free/used frames
 
 
 /**
- * Allocate a free physical frame
+ * @brief Allocate a free physical frame
  *
- * @return Physical frame number on success, -1 if no free frames
+ * Iterates through the global frame_bitMap to find an unused physical frame.
+ * Marks the found frame as used and returns its physical frame number (pfn).
+ *
+ * @return Physical frame number on success, -1 if no free frames are available.
  */
 int allocate_frame(void);
 
 
 /**
- * Release a physical frame back to the free pool
+ * @brief Release a physical frame back to the free pool
  *
- * @param pfn Physical frame number to free
+ * Marks the specified physical frame number (pfn) as free in the global frame_bitMap.
+ * Performs basic validation to ensure the pfn is within valid bounds and was previously allocated.
+ *
+ * @param pfn Physical frame number to free.
  */
 void free_frame(int pfn);
 
