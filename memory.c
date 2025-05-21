@@ -6,29 +6,35 @@
 
 #include "memory.h"
 #include <hardware.h>
+#include <yalnix.h>
+
+#define MIN_FRAME_ALLOWED 30
 
 int vm_enabled = 0;       // Initialize to 0 (VM disabled) by default
 void *kernel_brk = NULL;  // Current kernel break address
 void *user_brk = NULL;    // Current user break address
 int frame_bitMap[NUM_VPN] = {0};
 pte_t *region0_pt = NULL; // Pointer to the base of page table for Region 0
+pte_t *region1_pt = NULL; // Pointer to the base of page table for Region 1
 
 
 int allocate_frame(void) {
+    TracePrintf(1, "Enter allocate_frame()\n");
     // Iterate through the frame_bitMap to find a free frame
     for (int i = 0; i < NUM_VPN; i++) { // Assuming NUM_VPN is the total number of physical frames
         if (frame_bitMap[i] == 0) { // If the frame is free (0 means free, 1 means used)
             frame_bitMap[i] = 1;    // Mark it as used
-            TracePrintf(5, "allocate_frame: Allocated frame %d\n", i);
+            TracePrintf(1, "allocate_frame: Allocated frame %d\n", i);
             return i;               // Return the physical frame number
         }
     }
     TracePrintf(0, "allocate_frame: ERROR: No free physical frames available\n");
-    return -1; // No free frames
+    return ERROR; // No free frames
 }
 
 
 void free_frame(int pfn) {
+    TracePrintf(1, "Enter free_frame(%d)\n", pfn);
     // Basic validation for the physical frame number
     if (pfn < 0 || pfn >= NUM_VPN) { // Assuming NUM_VPN is the total number of physical frames
         TracePrintf(0, "free_frame: ERROR: Invalid physical frame number %d\n", pfn);
@@ -45,118 +51,193 @@ void free_frame(int pfn) {
     TracePrintf(5, "free_frame: Freed frame %d\n", pfn);
 }
 
+
 int SetKernelBrk(void *addr) {
+    TracePrintf(1, "SetKernelBrk: Called with addr=%p, current kernel_brk=%p, vm_enabled=%d\n",
+                addr, kernel_brk, vm_enabled);
+
+    // Validate the requested address: Must be within Region 0 and not conflict with stack.
+    if (addr < (void*)_first_kernel_data_page || addr >= (void *)KERNEL_STACK_BASE) { // Assuming _first_kernel_data_page is the lower bound.
+        TracePrintf(0, "SetKernelBrk: ERROR: Requested address %p out of bounds for kernel heap (min %p, max %p)\n",
+                    addr, (void*)_first_kernel_data_page, (void *)KERNEL_STACK_BASE);
+        return ERROR;
+    }
+
     if (!vm_enabled) {
-        // Before VM enabled: just track the kernel break
-        if (addr > kernel_brk && addr < (void *)KERNEL_STACK_BASE) {
+        // Before VM enabled: just track the kernel break within its valid range.
+        // We only allow increasing the break, as deallocation isn't managed here.
+        if (addr > kernel_brk) {
             kernel_brk = addr;
             return 0;
+        } else if (addr == kernel_brk) {
+            return 0; // No change
         } else {
-            return ERROR;
+            TracePrintf(0, "SetKernelBrk: ERROR: Cannot decrease kernel break before VM is enabled.\n");
+            return ERROR; // Disallow decreasing break before VM enabled for simplicity.
         }
     } else {
-        // After VM enabled: need to actually allocate frames and update page tables
-        void *old_brk = kernel_brk;
-        void *new_brk = addr;
+        // After VM enabled: need to actually allocate/deallocate frames and update page tables.
+        void *old_brk_page_aligned = UP_TO_PAGE((unsigned int)kernel_brk); // Current heap end, page-aligned
+        void *new_brk_page_aligned = UP_TO_PAGE((unsigned int)addr);       // Requested heap end, page-aligned
 
-        // Round up to page boundary
-        new_brk = (void *)UP_TO_PAGE((unsigned int)new_brk);
+        // If decreasing break, deallocate pages and update PTEs
+        if (new_brk_page_aligned < old_brk_page_aligned) {
+            TracePrintf(1, "SetKernelBrk: Decreasing kernel heap from %p to %p\n", old_brk_page_aligned, new_brk_page_aligned);
+            for (void *p = new_brk_page_aligned; p < old_brk_page_aligned; p += PAGESIZE) {
+                int vpn = (int)p >> PAGESHIFT; // Virtual page number
 
-        // If decreasing break, just update the break pointer
-        if (new_brk <= old_brk) {
-            kernel_brk = new_brk;
-            return 0;
-        }
+                // Get the PTE for this page
+                pte_t *current_pte = region0_pt + vpn; // Assumes region0_pt is kernel-mapped pointer
 
-        // If increasing break, map new frames
-        for (void *p = old_brk; p < new_brk; p += PAGESIZE) {
-            int vpn = (int)p >> PAGESHIFT;
-            int pfn = allocate_frame(); // Get a free physical frame
+                if (current_pte->valid) { // Check if the page was valid before attempting to free
+                    int pfn_to_free = current_pte->pfn;
+                    free_frame(pfn_to_free); // Return the physical frame
+                    frame_bitMap[pfn_to_free] = 0; // Mark as free in bitmap
 
-            if (pfn == ERROR) {
-                return ERROR; // Out of physical memory
+                    // Invalidate the PTE
+                    current_pte->valid = 0;
+                    current_pte->prot = 0;
+                    current_pte->pfn = 0; // Clear PFN
+                } else {
+                    TracePrintf(0, "SetKernelBrk: WARNING: Attempted to deallocate unmapped page %p\n", p);
+                }
+
+                // Flush the TLB for this page to invalidate the old mapping
+                WriteRegister(REG_TLB_FLUSH, (unsigned int)p);
             }
-
-            // Update the page table entry using explicit pointer arithmetic
-            pte_t *current_pte = region0_pt + vpn; // Pointer to the specific PTE
-            current_pte->valid = 1;
-            current_pte->prot = PROT_READ | PROT_WRITE;
-            current_pte->pfn = pfn;
-
-            // Flush the TLB for this page
-            WriteRegister(REG_TLB_FLUSH, (unsigned int)p);
         }
+        
+        else if (new_brk_page_aligned > old_brk_page_aligned) { // If increasing break, map new frames
+            TracePrintf(1, "SetKernelBrk: Increasing kernel heap from %p to %p\n", old_brk_page_aligned, new_brk_page_aligned);
+            for (void *p = old_brk_page_aligned; p < new_brk_page_aligned; p += PAGESIZE) {
+                int vpn = (int)p >> PAGESHIFT; // Virtual page number
 
-        kernel_brk = new_brk;
+                int pfn = allocate_frame(); // Get a free physical frame
+                if (pfn == ERROR) {
+                    TracePrintf(0, "SetKernelBrk: ERROR: Out of physical memory when expanding kernel heap at %p\n", p);
+                    return ERROR;
+                }
+                frame_bitMap[pfn] = 1; // Mark as used in bitmap
+
+                // Update the page table entry for this virtual page
+                pte_t *current_pte = region0_pt + vpn; // Assumes region0_pt is kernel-mapped pointer
+                current_pte->valid = 1;
+                // Kernel heap needs read/write. If you have executable code on heap, add PROT_EXEC.
+                current_pte->prot = PROT_READ | PROT_WRITE;
+                current_pte->pfn = pfn;
+
+                // Flush the TLB for this page
+                WriteRegister(REG_TLB_FLUSH, (unsigned int)p);
+                TracePrintf(1, "SetKernelBrk: Mapped kernel heap page %p (VPN %d) to PFN %d\n", p, vpn, pfn);
+            }
+        }
+        kernel_brk = addr;
+        TracePrintf(1, "SetKernelBrk: Updated kernel_brk to %p\n", kernel_brk);
         return 0;
     }
 }
 
 
-
-void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_brk_start) {
+void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_brk_start, unsigned int pmem_size) {
     TracePrintf(0, "Initializing page table...\n");
-    // Set the base address for the region0 page table in hardware
-    unsigned int last_physical_address = MAX_PMEM_SIZE - 1; // Calculate the last physical address
-    unsigned int page_table_size = MAX_PT_LEN * sizeof(struct pte); // Calculate size needed for the page table
-    unsigned int p_address_region0_base = DOWN_TO_PAGE(last_physical_address - page_table_size); // Place page table at the end of physical memory
-    region0_pt = (pte_t *)p_address_region0_base; // Cast to pte_t*
+    TracePrintf(0, "kernel text start: %d, kernel data start: %d, kernel brk start: %d\n", kernel_text_start, kernel_data_start, kernel_brk_start);
 
-    // Initialize the kernel text, data, and heap sections in the page table
-    for (int vpn = kernel_text_start; vpn < kernel_brk_start; vpn++) {  //
-        pte_t *entry = (pte_t *)(p_address_region0_base + vpn * sizeof(pte_t));
+    frame_bitMap[0] = 1; // Physical frame 0 is reserved
+
+    // Calculate the base address for the Region 0 page table in physical memory.
+    // This places the page table at the very end of physical memory.
+    unsigned int last_physical_address = pmem_size - 1; // Last byte of physical memory
+    unsigned int page_table_size = MAX_PT_LEN * sizeof(pte_t); // Size needed for one page table
+    unsigned int p_address_region1 = DOWN_TO_PAGE(last_physical_address - page_table_size); 
+    
+    region0_pt = (pte_t *)((int)PAGESIZE * kernel_text_start); // Global pointer to start of physical frame 1
+    frame_bitMap[kernel_text_start] = 1; // Physical frame kernel_text_start is used for Region 0 page table
+    TracePrintf(0, "Region 0 page table base physical address: %p\n", region0_pt);
+    TracePrintf(0, "Region 0 page table size: %u bytes\n", page_table_size);
+    TracePrintf(0, "max physical address: %p\n", last_physical_address);
+
+    // Initialize all entries in the Region 0 page table to invalid.
+    // This is a good practice to ensure no stale or unintended mappings exist.
+    for (int i = 0; i < MAX_PT_LEN; i++) {
+        region0_pt[i].valid = 0;
+        region0_pt[i].prot = 0;
+        region0_pt[i].pfn = 0;
+    }
+
+    for (int i = 0; i < kernel_text_start; i++) {
+        frame_bitMap[i] = 1; // Initialize all physical frames as used untill kernel_text_start
+    }
+
+    // Initialize mappings for kernel text, data, and heap sections in the Region 0 page table.
+    int index = 0;
+    for (int vpn_index = kernel_text_start + 1; vpn_index < kernel_brk_start; vpn_index++) {
+        pte_t *entry = &region0_pt[index]; // Access the PTE directly by index
         entry->valid = 1;
-        if (vpn < kernel_data_start) { // Set protection bits appropriately
-            entry->prot = PROT_READ | PROT_EXEC;  // Text section: read+execute
+        if (vpn_index < kernel_data_start) {
+            entry->prot = PROT_READ | PROT_EXEC; // Text section: read and execute permissions
         } else {
-            entry->prot = PROT_READ | PROT_WRITE;  // Data/heap: read+write
+            entry->prot = PROT_READ | PROT_WRITE; // Data/heap sections: read and write permissions
         }
-        entry->pfn = vpn;
-        frame_bitMap[entry->pfn] = 1;  // Mark the *physical frame* as used in the bitmap
+        entry->pfn = vpn_index; // Identity mapping: virtual page number = physical frame number
+        frame_bitMap[entry->pfn] = 1; // Mark the corresponding physical frame as used
+        index++;
     }
     TracePrintf(0, "Kernel text, data, and heap initialized with %d total entries\n", kernel_brk_start);
 
-    void * kernel_brk = UP_TO_PAGE(kernel_brk_start * PAGESIZE);  // Align to page boundary
+    // Set the kernel break (heap top) using SetKernelBrk.
+    void * kernel_brk = UP_TO_PAGE(kernel_brk_start * PAGESIZE); 
     if (SetKernelBrk(kernel_brk) != 0) {
         TracePrintf(0, "ERROR: Failed to set kernel break to address %p\n", kernel_brk);
-        return ERROR;  // Out of physical memory
+        return ERROR; 
     }
 
-    // Initialize the kernel stack in the page table
-    int base_kernelStack_page = KERNEL_STACK_BASE / PAGESIZE;  // Calculate the base page number for kernel stack
-    int kernelStack_limit_page = KERNEL_STACK_LIMIT / PAGESIZE;  // Calculate the limit page number for kernel stack
-    for (int vpn = base_kernelStack_page; vpn < kernelStack_limit_page; vpn ++) {
-        pte_t *entry = (pte_t *)(p_address_region0_base + vpn * sizeof(pte_t));
+    // Initialize mappings for the kernel stack in the Region 0 page table.
+    // KERNEL_STACK_BASE and KERNEL_STACK_LIMIT are virtual addresses, converted to page indices.
+    int base_kernelStack_vpn_index = KERNEL_STACK_BASE / PAGESIZE;
+    int kernelStack_limit_vpn_index = KERNEL_STACK_LIMIT / PAGESIZE;
+    for (int vpn_index = base_kernelStack_vpn_index; vpn_index < kernelStack_limit_vpn_index; vpn_index ++) {
+        pte_t *entry = &region0_pt[vpn_index]; // Access the PTE directly by index
         entry->valid = 1;
-        entry->prot = PROT_READ | PROT_WRITE;
-        entry->pfn = vpn;       // Set frame numbers to the ones proceeding kernel text, data, and heap frames
-        frame_bitMap[vpn] = 1;  // Mark the frame as used in the bitmap
+        entry->prot = PROT_READ | PROT_WRITE; // Kernel stack: read and write permissions
+        entry->pfn = vpn_index; // Identity mapping for kernel stack
+        frame_bitMap[entry->pfn] = 1; // Mark the corresponding physical frame as used
     }
-    TracePrintf(0, "Kernel stack initialized with %d total entries\n", (KERNEL_STACK_LIMIT - KERNEL_STACK_BASE) / sizeof(pte_t));
+    TracePrintf(0, "Kernel stack initialized with %d total entries\n", (KERNEL_STACK_LIMIT - KERNEL_STACK_BASE) / PAGESIZE);
 
-    // Set page table registers to tell hardware where to find the page table
-    int numPages_inRegion0 = VMEM_0_LIMIT / PAGESIZE;  // Number of pages in Region 0
-    WriteRegister(REG_PTBR0, p_address_region0_base); // Set base address of region0 page table in hardware
-    WriteRegister(REG_PTLR0, numPages_inRegion0); // Set limit of region0 page table in hardware
-    TracePrintf(0, "Wrote region 0 page table base register to %d\n", p_address_region0_base);
-    TracePrintf(0, "Wrote region 0 page table limit register to %d\n", numPages_inRegion0);
+    // Set hardware registers for Region 0 page table.
+    int numPages_inRegion0 = VMEM_0_LIMIT / PAGESIZE; // Total number of pages in Region 0
+    WriteRegister(REG_PTBR0, (unsigned int)region0_pt); // Set base physical address of Region 0 page table
+    WriteRegister(REG_PTLR0, (unsigned int)numPages_inRegion0); // Set number of entries in Region 0 page table
 
-    // Set up the base physicall adress of region 1
-    unsigned int p_address_region1_base = p_address_region0_base + numPages_inRegion0 * sizeof(pte_t); // Place region1 PT at the end of region0 PT
-    int vpn = VMEM_1_BASE / PAGESIZE; // Calculate the virtual page number for the first page of Region 1
-    pte_t *entry = (pte_t *)(p_address_region1_base);
-    entry->valid = 1;
-    entry->prot = PROT_READ | PROT_WRITE;
-    entry->pfn = 1; // Set frame number to 1 since it is the first page of region 1
-    frame_bitMap[vpn] = 1;  // Mark the frame as used in the bitmap
-    TracePrintf(0, "Region 1 page table initialized with %d total entries\n", 1);
 
-    WriteRegister(REG_PTBR1, p_address_region1_base); // Set base address of region1 page table in hardware
-    WriteRegister(REG_PTLR1, 1); // Set limit of region1 page table in hardware (just 1 entry so far)
-    TracePrintf(0, "Wrote region 1 page table base register to %d\n", p_address_region1_base);
-    TracePrintf(0, "Wrote region 1 page table limit register to %d\n", 1);
+    /* --------------------------------------Region 1 page table ------------------------------------- */
+    // Place Region 1's page table immediately after Region 0's page table in physical memory.
+    region1_pt = (pte_t *)p_address_region1; // Global pointer to Region 1 page table in physical memory
+
+    // Initialize all entries in the Region 1 page table to invalid.
+    for (int i = 0; i < MAX_PT_LEN; i++) {
+        region1_pt[i].valid = 0;
+        region1_pt[i].prot = 0;
+        region1_pt[i].pfn = 0;
+    }
+
+    // Initialize the first entry for Region 1.
+    int first_region1_vpn_index = 0; 
+
+    pte_t *entry_r1 = &region1_pt[first_region1_vpn_index]; // Access the first PTE
+    entry_r1->valid = 1;
+    entry_r1->prot = PROT_READ | PROT_WRITE | PROT_EXEC; // Assuming user code will need read, write, and execute
+    entry_r1->pfn = numPages_inRegion0; // Map to the first free physical frame after Region 0
+
+    frame_bitMap[entry_r1->pfn] = 1; // Mark the *physical frame* as used in the bitmap
+    TracePrintf(0, "Region 1 page table initialized with 1 total entry, mapping virtual page %d to physical frame %d\n", first_region1_vpn_index, entry_r1->pfn);
+
+    // Set hardware registers for Region 1 page table
+    WriteRegister(REG_PTBR1, (unsigned int)p_address_region1); // Set base physical address of Region 1 page table
+    WriteRegister(REG_PTLR1, (unsigned int)1); // Set limit of Region 1 page table to 1 entry initially
+    TracePrintf(0, "Wrote region 1 page table base register to %p\n", p_address_region1);
+    TracePrintf(0, "Wrote region 1 page table limit register to %u\n", (unsigned int)1);
 }
-
 
 void enable_virtual_memory(void) {
     // Write 1 to REG_VM_ENABLE register to enable virtual memory

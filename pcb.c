@@ -11,7 +11,6 @@ list_t *ready_queue;
 list_t *delay_queue;
 list_t *blocked_queue;
 list_t *zombie_queue;
-pcb_t *current_process = NULL;
 int next_pid = 1;  // Start PIDs at 1
 
 int init_pcb_system(void) {

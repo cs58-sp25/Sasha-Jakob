@@ -17,51 +17,44 @@
 #include "kernel.h"
 #include "list.h"
 #include "memory.h"
-
 // #include "sync.h"
 // #include "syscalls.h"
 
+/* -------------------------------------------------------------- Define Global Variables -------------------------------------------------- */
+pcb_t *current_process = NULL;
 
+
+/* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/
 void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
-    // Zero-initialize global variables to prevent undefined behavior
-    current_process = NULL;
 
-    // Print debug information about memory layout to help with debugging
-    // Using %x for hex output as these are memory addresses/page numbers
+    // Print debug information about memory layout
     TracePrintf(0, "KernelStart: text start = 0x%x\n", _first_kernel_text_page);
     TracePrintf(0, "KernelStart: data start = 0x%x\n", _first_kernel_data_page);
     TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
 
-    // Initialize the interrupt vector table to handle traps and interrupts (Checkpoint 8.2.3)
+    // Initialize the interrupt vector table
     init_interrupt_vector();
 
-    // Initialize page tables for Region 0 and 1 (Checkpoint 8.2.2)
-    // This function should also set up the initial kernel break address.
-    init_page_table((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page);
+    // Initialize page tables for Region 0 and initial kernel break
+    init_page_table((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
 
-    // Enable virtual memory - a critical transition point (Checkpoint 8.2.2)
-    // After this call, all memory addresses are interpreted as virtual rather than physical.
-    enable_virtual_memory();
-
-    // Create the idle process - runs when no other process is ready (Checkpoint 8.2.4)
-    // The create_idle_process function should handle setting up idle's Region 1 page table,
-    // kernel stack frames, and configuring its UserContext (PC to DoIdle, SP to user stack top).
-    pcb_t *idle_process = create_idle_process(uctxt);
+    // Create the idle process
+    pcb_t *idle_process = create_idle_process(uctxt); // The uctxt parameter here is the initial UserContext provided by the hardware
     if (!idle_process) {
         TracePrintf(0, "ERROR: Failed to create idle process\n");
-        Halt(); // System needs at least one process to function; halt if idle creation fails.
+        Halt(); // System cannot function without an idle process; halt.
     }
 
-    // Set the global current_process to the newly created idle process.
-    // This makes idle the first process that the system considers 'running' or ready to run.
+    // Set the global 'current_process' to the newly created idle process.
+    // This is crucial because 'enable_virtual_memory' will now use 'current_process->region1_pt'.
     current_process = idle_process;
 
-    // Return to the idle process's user context (Checkpoint 8.2.4)
-    // This modifies the uctxt pointer provided by the hardware,
-    // so when KernelStart returns, the machine enters user mode and executes DoIdle.
+    // Enable virtual memory.
+    enable_virtual_memory();
+
+    // Return to the idle process's user context
     TracePrintf(0, "Leaving KernelStart, returning to idle process (PID %d)\n", idle_process->pid);
     *uctxt = idle_process->user_context;
-
     return; // Return to user mode, entering the idle loop.
 }
 
@@ -86,9 +79,7 @@ void init_interrupt_vector(void) {
     vector_table[TRAP_TTY_TRANSMIT] = (int)transmit_handler; // Terminal output complete
 
     // Write the address of vector table to REG_VECTOR_BASE register
-    // This tells the hardware where to find the interrupt handlers
     WriteRegister(REG_VECTOR_BASE, (unsigned int)vector_table);
-
     TracePrintf(0, "Interrupt vector table initialized at 0x%p\n", vector_table);
 }
 
@@ -102,44 +93,83 @@ pcb_t *create_idle_process(UserContext *uctxt) {
         return NULL;
     }
 
-    // Get the current Region 1 page table pointer - this is a physical address at this point
-    unsigned int r1_page_table_addr = ReadRegister(REG_PTBR1);
-
-    // After VM is enabled, you'll need to access this through virtual memory
-    // Store the physical address for now - your kernel will need to map this later
-    idle_pcb->region1_pt = (struct pte *)r1_page_table_addr;
-
-    // For kernel stack, save the page frame numbers
-    // Since you're mapping 1:1 with page = frame, save these page numbers
-    int base_kernelStack_page = KERNEL_STACK_BASE / PAGESIZE;
-    int kernelStack_limit_page = KERNEL_STACK_LIMIT / PAGESIZE;
-
-    // Allocate space to store kernel stack frame numbers
-    int num_stack_frames = kernelStack_limit_page - base_kernelStack_page;
-    idle_pcb->kernel_stack_pages = malloc(num_stack_frames * sizeof(int));
-    if (idle_pcb->kernel_stack_pages == NULL) {
-        TracePrintf(0, "ERROR: Failed to allocate space for kernel stack frames\n");
+    // Allocate a NEW physical frame for the idle process's Region 1 page table.
+    int idle_r1_pt_pfn = allocate_frame();
+    if (idle_r1_pt_pfn == ERROR) {
+        TracePrintf(0, "ERROR: Failed to allocate frame for idle process R1 page table\n");
         free(idle_pcb);
         return NULL;
     }
 
-    // Save the frame numbers for the kernel stack
+    // Store the physical address of this new page table in the PCB.
+    idle_pcb->region1_pt = (pte_t *)(idle_r1_pt_pfn * PAGESIZE);
+
+    // Initialize a *newly allocated* physical page table
+    pte_t *new_idle_r1_pt_vaddr = (pte_t *)(idle_r1_pt_pfn * PAGESIZE);
+    for (int i = 0; i < MAX_PT_LEN; i++) {
+        new_idle_r1_pt_vaddr[i].valid = 0;
+        new_idle_r1_pt_vaddr[i].prot = 0;
+        new_idle_r1_pt_vaddr[i].pfn = 0;
+    }
+
+    // Allocate a physical frame for the idle process's user stack
+    int user_stack_frame_number = allocate_frame();
+    if (user_stack_frame_number == ERROR) {
+        TracePrintf(0, "ERROR: Failed to allocate physical frame for idle process user stack\n");
+        free(idle_pcb); // Free the allocated PCB
+        return NULL;
+    }
+    // Mark the allocated physical frame as used in the bitmap
+    frame_bitMap[user_stack_frame_number] = 1;
+
+    // Determine the virtual page number (VPN) for the user stack within Region 1
+    int user_stack_vpn_index = ((VMEM_1_LIMIT - 1) / PAGESIZE) - (VMEM_1_BASE / PAGESIZE);
+
+    // Set up the Page Table Entry (PTE) for the user stack in Region 1
+    pte_t *user_stack_pte = &(new_idle_r1_pt_vaddr[user_stack_vpn_index]); // Use the *virtual address* of the new page table
+    user_stack_pte->valid = 1;
+    user_stack_pte->prot = PROT_READ | PROT_WRITE; // User stack needs read/write permissions
+    user_stack_pte->pfn = user_stack_frame_number; // Map to the allocated physical frame
+
+    TracePrintf(3, "create_idle_process: Mapped idle user stack: virtual page %d (relative to R1) to physical frame %d\n",
+                user_stack_vpn_index, user_stack_frame_number);
+
+
+    // For kernel stack, save the page frame numbers.
+    int base_kernelStack_page = KERNEL_STACK_BASE / PAGESIZE;
+    int kernelStack_limit_page = KERNEL_STACK_LIMIT / PAGESIZE;
+
+    int num_stack_frames = kernelStack_limit_page - base_kernelStack_page;
+    idle_pcb->kernel_stack_pages = malloc(num_stack_frames * sizeof(int));
+    if (idle_pcb->kernel_stack_pages == NULL) {
+        TracePrintf(0, "ERROR: Failed to allocate space for kernel stack frames\n");
+        // Clean up previously allocated resources
+        free_frame(user_stack_frame_number); // Free the user stack frame
+        free(idle_pcb);
+        return NULL;
+    }
+
     for (int i = 0; i < num_stack_frames; i++) {
         idle_pcb->kernel_stack_pages[i] = base_kernelStack_page + i;
     }
+    TracePrintf(3, "create_idle_process: Saved %d kernel stack frame numbers\n", num_stack_frames);
 
-    // Copy the UserContext provided to KernelStart
+
+    // Copy the initial UserContext provided to KernelStart.
     memcpy(&idle_pcb->user_context, uctxt, sizeof(UserContext));
 
-    // Point PC to DoIdle function and SP to top of user stack
+    // Point Program Counter (PC) to the DoIdle function and Stack Pointer (SP) to the top of the user stack.
     idle_pcb->user_context.pc = (void *)DoIdle;
-    idle_pcb->user_context.sp = (void *)VMEM_1_LIMIT;  // Top of Region 1
-    TracePrintf(3, "create_idle_process: Idle process PC set to DoIdle, SP set to %p\n", idle_pcb->user_context.sp);
 
-    // Set as current process
+    // The stack pointer should point to the highest valid address *within* the allocated stack page,
+    idle_pcb->user_context.sp = (void *)VMEM_1_LIMIT; 
+    TracePrintf(3, "create_idle_process: Idle process PC set to DoIdle (%p), SP set to %p\n",
+                idle_pcb->user_context.pc, idle_pcb->user_context.sp);
+
+    // Set this newly created idle process as the current process.
     current_process = idle_pcb;
 
-    // Register with helper
+    // Register the new process with the helper function to get a PID.
     int pid = helper_new_pid(idle_pcb->region1_pt);
     idle_pcb->pid = pid;
 

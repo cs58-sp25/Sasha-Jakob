@@ -34,12 +34,15 @@ void init_interrupt_vector(void);
 
 
 /**
- * create_idle_process - Creates the idle process
+ * @brief Creates and initializes the Process Control Block (PCB) for the idle process.
  *
- * Sets up a PCB for the idle process which runs when no
- * other processes are runnable.
+ * This function sets up the idle process's PCB, including its Region 1 page table
+ * (initially mapping only the user stack), its kernel stack frames, and its UserContext
+ * to start executing the DoIdle function.
  *
- * @return Pointer to idle PCB, or NULL on failure
+ * @param uctxt A pointer to the initial UserContext provided by KernelStart.
+ * This context is copied and then modified for the idle process.
+ * @return A pointer to the newly created idle process's PCB on success, or NULL on failure.
  */
 pcb_t *create_idle_process(UserContext *uctxt);
 

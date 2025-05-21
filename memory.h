@@ -16,6 +16,7 @@ extern void *kernel_brk;  // Current kernel break address
 extern void *user_brk;    // Current user break address
 extern int frame_bitMap[NUM_VPN];  // Bitmap to track free/used frames
 extern pte_t *region0_pt; // Declare it as a pointer to pte_t
+extern pte_t *region1_pt; // Declare it as a pointer to pte_t
 
 
 /**
@@ -41,9 +42,15 @@ void free_frame(int pfn);
 
 
 /**
- * Sets the kernel break address
+ * @brief Sets the kernel's program break (heap end) address.
  *
- * @param addr address to set the kernel break to
+ * This function manages the kernel heap. Before virtual memory is enabled,
+ * it simply tracks the `kernel_brk` pointer. After virtual memory is enabled,
+ * it dynamically allocates/deallocates physical pages and updates the
+ * Region 0 page table as needed.
+ *
+ * @param addr The new desired program break address.
+ * @return 0 on success, ERROR on failure (e.g., out of memory, invalid address).
  */
 int SetKernelBrk(void *addr);
 
@@ -56,7 +63,7 @@ int SetKernelBrk(void *addr);
  * @param kernel_data_start First page of kernel data
  * @param kernel_brk_start First page after kernel data
  */
-void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_brk_start);
+void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_brk_start, unsigned int pmem_size);
 
 
 
