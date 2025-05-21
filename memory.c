@@ -150,7 +150,7 @@ void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_br
     unsigned int page_table_size = MAX_PT_LEN * sizeof(pte_t); // Size needed for one page table
     unsigned int p_address_region1 = DOWN_TO_PAGE(last_physical_address - page_table_size); 
     
-    region0_pt = (pte_t *)((int)PAGESIZE * kernel_text_start); // Global pointer to start of physical frame 1
+    region0_pt = (pte_t *)((int)PAGESIZE * kernel_text_start); // Global pointer to start of physical frame kernel_text_start
     frame_bitMap[kernel_text_start] = 1; // Physical frame kernel_text_start is used for Region 0 page table
     TracePrintf(0, "Region 0 page table base physical address: %p\n", region0_pt);
     TracePrintf(0, "Region 0 page table size: %u bytes\n", page_table_size);
