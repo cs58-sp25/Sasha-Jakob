@@ -67,14 +67,13 @@ void init_interrupt_vector(void) {
 
     // Set up handlers for each trap type by populating the vector table
     // Each entry contains the address of the function to handle that specific trap
-    vector_table[TRAP_KERNEL] = (int)trap_kernel_handler;              // System calls from user processes
-    vector_table[TRAP_CLOCK] = (int)trap_clock_handler;                // Timer interrupts for scheduling
-    vector_table[TRAP_ILLEGAL] = (int)trap_illegal_handler;            // Illegal instruction exceptions
-    vector_table[TRAP_MEMORY] = (int)trap_memory_handler;              // Memory access violations and stack growth
-    vector_table[TRAP_MATH] = (int)trap_math_handler;                  // Math errors like division by zero
-    vector_table[TRAP_TTY_RECEIVE] = (int)trap_tty_receive_handler;    // Terminal input available
-    vector_table[TRAP_TTY_TRANSMIT] = (int)trap_tty_transmit_handler;  // Terminal output complete
-    vector_table[TRAP_DISK] = (int)trap_disk_handler;                  // Disk operations complete
+    vector_table[TRAP_KERNEL] = (int)kernel_handler;        // System calls from user processes
+    vector_table[TRAP_CLOCK] = (int)clock_handler;          // Timer interrupts for scheduling
+    vector_table[TRAP_ILLEGAL] = (int)illegal_handler;      // Illegal instruction exceptions
+    vector_table[TRAP_MEMORY] = (int)memory_handler;        // Memory access violations and stack growth
+    vector_table[TRAP_MATH] = (int)math_handler;            // Math errors like division by zero
+    vector_table[TRAP_TTY_RECEIVE] = (int)receive_handler;   // Terminal input available
+    vector_table[TRAP_TTY_TRANSMIT] = (int)transmit_handler; // Terminal output complete
 
     // Write the address of vector table to REG_VECTOR_BASE register
     // This tells the hardware where to find the interrupt handlers
@@ -124,7 +123,8 @@ pcb_t *create_idle_process(UserContext *uctxt) {
 
     // Point PC to DoIdle function and SP to top of user stack
     idle_pcb->user_context.pc = (void *)DoIdle;
-    idle_pcb->user_context.sp = VMEM_1_LIMIT;  // Top of Region 1
+    idle_pcb->user_context.sp = (void *)VMEM_1_LIMIT;  // Top of Region 1
+    TracePrintf(3, "create_idle_process: Idle process PC set to DoIdle, SP set to %p\n", idle_pcb->user_context.sp);
 
     // Set as current process
     current_process = idle_pcb;
@@ -137,20 +137,7 @@ pcb_t *create_idle_process(UserContext *uctxt) {
     return idle_pcb;
 }
 
-/**
- * @brief Copy kernel stack contents
- *
- * Copies the contents of the current kernel stack (identified by src_frames)
- * to a new set of kernel stack frames (identified by dst_frames).
- * This function is crucial during process cloning (Fork) to set up the new process's
- * kernel stack. It temporarily maps destination frames into the kernel's address space
- * to perform the copy, then unmaps them.
- *
- * @param src_frames An array of physical frame numbers for the source kernel stack.
- * @param dst_frames An array of physical frame numbers for the destination kernel stack.
- * @param num_frames The number of physical frames that constitute the kernel stack.
- * @return 0 on success, ERROR on failure (e.g., if temporary mapping fails).
- */
+
 int copy_kernel_stack(int *src_frames, int *dst_frames, int num_frames) {
     TracePrintf(3, "copy_kernel_stack: Copying %d frames from source to destination kernel stack.\n", num_frames);
 
@@ -176,17 +163,7 @@ int copy_kernel_stack(int *src_frames, int *dst_frames, int num_frames) {
     return 0; // Success
 }
 
-/**
- * @brief Switch to a new process
- *
- * This is a high-level function that orchestrates a complete context switch
- * to the specified 'next' process. It involves saving the current process's
- * user context, updating global pointers, changing kernel stack mappings,
- * and finally invoking KCSwitch to perform the low-level kernel context switch.
- *
- * @param next A pointer to the PCB of the next process to run.
- * @return 0 on success, ERROR on failure.
- */
+
 int switch_to_process(pcb_t *next) {
     TracePrintf(2, "switch_to_process: Initiating context switch from PID %d to PID %d.\n",
                 current_process ? current_process->pid : -1, next->pid);
@@ -211,7 +188,7 @@ int switch_to_process(pcb_t *next) {
     // Update the hardware's Region 1 page table base register (PTBR1)
     // This changes the user address space to that of the new process
     WriteRegister(REG_PTBR1, (unsigned int)current_process->region1_pt);
-    WriteRegister(REG_PTLR1, (unsigned int)NUM_PAGES_IN_REGION1); // Assuming NUM_PAGES_IN_REGION1 is defined
+    WriteRegister(REG_PTLR1, (unsigned int)((VMEM_REGION_SIZE - VMEM_0_LIMIT)/PAGESIZE));
 
     // Map the kernel stack of the new process into Region 0
     // This updates the Region 0 page table entries for the kernel stack area
@@ -229,7 +206,7 @@ int switch_to_process(pcb_t *next) {
     // The return value of KCSwitch is the kernel context of the process that is being switched back to.
     // In this case, we are switching TO 'next', so KCSwitch will return 'next->kernel_context'
     // when 'next' eventually gets scheduled back in.
-    KernelContext *kc_returned = KernelContextSwitch(KCSwitch, NULL, (void *)next);
+    int kc_returned = KernelContextSwitch(KCSwitch, NULL, (void *)next);
 
     // When this function returns, it means a process has been switched back to this context.
     // The 'kc_returned' would be the kernel context that was just restored.
@@ -240,18 +217,7 @@ int switch_to_process(pcb_t *next) {
     return 0; // Success
 }
 
-/**
- * @brief Low-level kernel context switch function
- *
- * This function is called by KernelContextSwitch to perform the actual saving
- * and restoring of kernel contexts. It is executed on a special context/stack.
- *
- * @param kc_in The kernel context of the process that is being switched OUT.
- * @param curr_pcb_p Pointer to the PCB of the current (outgoing) process.
- * (Not used in this simplified KCSwitch, but kept for signature compliance).
- * @param next_pcb_p Pointer to the PCB of the next (incoming) process.
- * @return A pointer to the kernel context of the process that should be resumed.
- */
+
 KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
     pcb_t *next_proc = (pcb_t *)next_pcb_p;
     // pcb_t *curr_proc = (pcb_t *)curr_pcb_p; // If we were to save the outgoing context here
@@ -266,18 +232,7 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
     return &next_proc->kernel_context;
 }
 
-/**
- * @brief Low-level kernel context copy function
- *
- * This function is called by KernelContextSwitch during process cloning (Fork).
- * It copies the kernel context and kernel stack contents from the current process
- * to the new process.
- *
- * @param kc_in The kernel context of the process that is being cloned (current process).
- * @param new_pcb_p Pointer to the PCB of the newly created process.
- * @param not_used Unused parameter (kept for signature compliance).
- * @return The original kernel context (kc_in), so the cloning process can continue.
- */
+
 KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used) {
     pcb_t *new_proc = (pcb_t *)new_pcb_p;
 
@@ -300,45 +255,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used) {
     return kc_in;
 }
 
-int load_init_program(pcb_t *init_pcb, char *filename, char **args) {
-    // Set current process to init_pcb (required by LoadProgram)
-    // LoadProgram uses this global to know which process to load into
-    current_process = init_pcb;
 
-    // Set Region 1 page table registers to point to init's page table
-    // This makes the hardware use init's address space mappings
-    WriteRegister(REG_PTBR1, (unsigned int)init_pcb->region1_pt);
-    WriteRegister(REG_PTLR1, init_pcb->region1_pt_size);
-
-    // Flush TLB for Region 1 to clear any stale mappings
-    // This ensures hardware uses the new page table entries
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
-
-    // Call LoadProgram to load executable into memory
-    // This reads the program from disk and sets up text, data, and stack
-    if (LoadProgram(filename, args, init_pcb) != 0) {
-        TracePrintf(0, "ERROR: Failed to load program %s\n", filename);
-        return ERROR;
-    }
-
-    return 0;
-}
-
-void init_lists(void) {
-    // Create ready queue for runnable processes
-    // This is used by the scheduler to track which processes can run
-    ready_queue = create_queue();
-    if (!ready_queue) {
-        TracePrintf(0, "ERROR: Failed to create ready queue\n");
-        Halt();  // Critical error - scheduling can't work without ready queue
-    }
-
-    // Initialize other global data structures
-    // (Blocked queues, synchronization object tables, etc.)
-    // These would be used for process waiting, locks, condition variables, etc.
-
-    TracePrintf(0, "Process and resource lists initialized\n");
-}
 
 void DoIdle(void) {
     // Infinite loop that runs when no other process is ready

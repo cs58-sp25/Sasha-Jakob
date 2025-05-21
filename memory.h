@@ -15,7 +15,7 @@ extern int vm_enabled;  // Flag indicating if virtual memory is enabled
 extern void *kernel_brk;  // Current kernel break address
 extern void *user_brk;    // Current user break address
 extern int frame_bitMap[NUM_VPN];  // Bitmap to track free/used frames
-
+extern pte_t *region0_pt; // Declare it as a pointer to pte_t
 
 
 /**
@@ -70,69 +70,32 @@ void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_br
 void enable_virtual_memory(void);
 
 
-/**
- * Map a virtual page to a physical frame
- * Creates the mapping in the specified page table
- *
- * @param pt Pointer to page table
- * @param vpn Virtual page number
- * @param pfn Physical frame number
- * @param prot Protection bits (PROT_READ, PROT_WRITE, PROT_EXEC)
- */
-void map_page(struct pte *pt, int vpn, int pfn, int prot);
-
 
 /**
- * Unmap a virtual page
- * Clears the mapping in the specified page table
+ * @brief Setup temporary mapping for kernel stack
  *
- * @param pt Pointer to page table
- * @param vpn Virtual page number
+ * Creates a temporary mapping in Region 0 to access a physical frame.
+ * This is used when the kernel needs to directly access the contents of a
+ * physical frame that is not normally mapped into its address space (e.g.,
+ * when copying kernel stacks during Fork). The mapping is placed at a
+ * predefined temporary virtual address (e.g., just below the kernel stack).
+ *
+ * @param pfn Physical frame number to map.
+ * @return Virtual address of the temporary mapping on success, NULL on failure.
  */
-void unmap_page(struct pte *pt, int vpn);
+void *setup_temp_mapping(int pfn);
 
 
 /**
- * Copy a page table
- * Makes a complete copy of a page table, used for Fork
+ * @brief Remove temporary mapping
  *
- * @param src Source page table to copy
- * @param dest Destination to copy to
- * @param copy_frames If true, also copy the contents of mapped frames
- * @return 0 on success, ERROR on failure
- */
-int copy_page_table(struct pte *src, struct pte *dest, int copy_frames);
-
-
-/**
- * Handle memory fault trap
- * Checks if the fault is for stack growth, and handles accordingly
+ * Removes a temporary mapping created by `setup_temp_mapping`.
+ * This function unmaps the specified virtual address from Region 0 and
+ * flushes the corresponding TLB entry.
  *
- * @param uctxt User context containing fault information
- * @return 0 if handled successfully, ERROR if cannot be handled
+ * @param addr Virtual address of the temporary mapping to unmap.
  */
-int handle_memory_trap(UserContext *uctxt);
-
-
-/**
- * Allocate and map region 1 stack
- * Sets up initial user stack with desired number of pages
- *
- * @param region1_pt Pointer to Region 1 page table
- * @param num_pages Number of pages to allocate for stack
- * @return 0 on success, ERROR on failure
- */
-int allocate_user_stack(struct pte *region1_pt, int num_pages);
-
-
-/**
- * Allocate and map kernel stack
- * Sets up a kernel stack for a process
- *
- * @param kernel_stack_pages Array to store physical frame numbers
- * @return 0 on success, ERROR on failure
- */
-int allocate_kernel_stack(pcb_t *pcb, int map_now);
+void remove_temp_mapping(void *addr);
 
 
 /**
@@ -161,59 +124,38 @@ void free_process_memory(pcb_t *proc);
  */
 struct pte *get_region0_pt(void);
 
+/**
+ * @brief Maps a virtual page to a physical frame in a given page table.
+ *
+ * This function takes the base address of a page table, a virtual page number (VPN),
+ * a physical frame number (PFN), and desired protection bits, then updates the
+ * corresponding page table entry and flushes the TLB for that virtual page.
+ *
+ * @param page_table_base A pointer to the base of the page table (e.g., region0_pt or region1_pt).
+ * @param vpn The virtual page number to map.
+ * @param pfn The physical frame number to map to.
+ * @param prot The protection bits for the page (e.g., PROT_READ | PROT_WRITE).
+ */
+void map_page(pte_t *page_table_base, int vpn, int pfn, int prot);
+
+
+/**
+ * @brief Unmaps a virtual page from a given page table.
+ *
+ * This function invalidates a page table entry for a given virtual page number (VPN)
+ * in the specified page table and flushes the TLB for that virtual page.
+ *
+ * @param page_table_base A pointer to the base of the page table (e.g., region0_pt or region1_pt).
+ * @param vpn The virtual page number to unmap.
+ */
+void unmap_page(pte_t *page_table_base, int vpn);
+
 
 /**
  * Enable virtual memory
  * Writes to VM_ENABLE register to activate the MMU
  */
 void enable_virtual_memory(void);
-
-
-/**
- * Check if a user pointer is valid
- * Verifies that a user-provided pointer is within bounds and mapped
- *
- * @param addr Address to check
- * @param len Length of memory region to check
- * @param prot Required protection bits
- * @return 1 if valid, 0 if invalid
- */
-int is_valid_user_pointer(void *addr, int len, int prot);
-
-
-/**
- * Check if a user string is valid
- * Verifies that a user-provided string pointer is valid
- *
- * @param str String to check
- * @param max_len Maximum length to check
- * @return Length of string (including null) if valid, -1 if invalid
- */
-int is_valid_user_string(char *str, int max_len);
-
-
-/**
- * Copy data from user space to kernel space
- * Safely copies memory from user address space to kernel
- *
- * @param dst Destination address in kernel
- * @param src Source address in user space
- * @param len Number of bytes to copy
- * @return 0 on success, ERROR on failure
- */
-int copy_from_user(void *dst, void *src, int len);
-
-
-/**
- * Copy data from kernel space to user space
- * Safely copies memory from kernel to user address space
- *
- * @param dst Destination address in user space
- * @param src Source address in kernel
- * @param len Number of bytes to copy
- * @return 0 on success, ERROR on failure
- */
-int copy_to_user(void *dst, void *src, int len);
 
 
 /**

@@ -37,8 +37,8 @@ typedef struct pcb {
     int pid;   // Process ID
 
     // Memory management
-    struct pte *region1_pt;                                   // Region 1 page table
-    int kernel_stack_pages[KERNEL_STACK_MAXSIZE / PAGESIZE];  // Physical frames for kernel stack
+    pte_t *region1_pt;                                   // Region 1 page table
+    int *kernel_stack_pages;                                  // Pointer to physical frames for kernel stack
     void *brk;                                                // Current program break (heap limit)
 
     // Process state
@@ -55,7 +55,7 @@ typedef struct pcb {
     int exit_code;      // Exit code when process terminates
 
     // Process relationships
-    struct pcb_t *parent;        // Pointer to parent PCB
+    struct pcb *parent;        // Pointer to parent PCB
     list_t children;           // List of children PCBs
     int waiting_for_children;  // True if process is blocked on Wait
 

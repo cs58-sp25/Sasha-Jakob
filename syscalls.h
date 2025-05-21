@@ -7,7 +7,8 @@
 #include "sync.h"
 #include "memory.h"
 
-void (*syscall_handlers[])(UserContext *);
+// Declare the array of syscall handler function pointers
+extern void (*syscall_handlers[20])(UserContext *);
 void SysFork(UserContext *uctxt);
 void SysExec(UserContext *uctxt);
 void SysExit(UserContext *uctxt);

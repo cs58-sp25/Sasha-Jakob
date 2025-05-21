@@ -43,50 +43,66 @@ void init_interrupt_vector(void);
  */
 pcb_t *create_idle_process(UserContext *uctxt);
 
-
 /**
- * create_init_process - Creates the init process
+ * @brief Copy kernel stack contents
  *
- * Sets up a PCB for the init process which is the
- * first user process in the system.
+ * Copies the contents of the current kernel stack (identified by src_frames)
+ * to a new set of kernel stack frames (identified by dst_frames).
+ * This function is crucial during process cloning (Fork) to set up the new process's
+ * kernel stack. It temporarily maps destination frames into the kernel's address space
+ * to perform the copy, then unmaps them.
  *
- * @param name Program name for init
- * @param args Arguments to pass to init
- * @return Pointer to init PCB, or NULL on failure
+ * @param src_frames An array of physical frame numbers for the source kernel stack.
+ * @param dst_frames An array of physical frame numbers for the destination kernel stack.
+ * @param num_frames The number of physical frames that constitute the kernel stack.
+ * @return 0 on success, ERROR on failure (e.g., if temporary mapping fails).
  */
-pcb_t *create_init_process(char *name, char **args);
-
-
-/**
- * setup_idle_context - Configures user context for idle process
- *
- * Sets PC to DoIdle function and sets up stack pointer.
- *
- * @param idle_pcb PCB for idle process
- * @return 0 on success, ERROR on failure
- */
-int setup_idle_context(pcb_t *idle_pcb);
+int copy_kernel_stack(int *src_frames, int *dst_frames, int num_frames);
 
 
 /**
- * load_init_program - Loads the init program into memory
+ * @brief Switch to a new process
  *
- * Uses LoadProgram to set up init process Region 1 memory.
+ * This is a high-level function that orchestrates a complete context switch
+ * to the specified 'next' process. It involves saving the current process's
+ * user context, updating global pointers, changing kernel stack mappings,
+ * and finally invoking KCSwitch to perform the low-level kernel context switch.
  *
- * @param init_pcb PCB for init process
- * @param filename Name of init program file
- * @param args Arguments to pass to init
- * @return 0 on success, ERROR on failure
+ * @param next A pointer to the PCB of the next process to run.
+ * @return 0 on success, ERROR on failure.
  */
-int load_init_program(pcb_t *init_pcb, char *filename, char **args);
+int switch_to_process(pcb_t *next);
 
 
 /**
- * init_lists - Initialize all global data structures
+ * @brief Low-level kernel context switch function
  *
- * Sets up ready queue, blocked queue, and other global lists.
+ * This function is called by KernelContextSwitch to perform the actual saving
+ * and restoring of kernel contexts. It is executed on a special context/stack.
+ *
+ * @param kc_in The kernel context of the process that is being switched OUT.
+ * @param curr_pcb_p Pointer to the PCB of the current (outgoing) process.
+ * (Not used in this simplified KCSwitch, but kept for signature compliance).
+ * @param next_pcb_p Pointer to the PCB of the next (incoming) process.
+ * @return A pointer to the kernel context of the process that should be resumed.
  */
-void init_lists(void);
+KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p);
+
+
+/**
+ * @brief Low-level kernel context copy function
+ *
+ * This function is called by KernelContextSwitch during process cloning (Fork).
+ * It copies the kernel context and kernel stack contents from the current process
+ * to the new process.
+ *
+ * @param kc_in The kernel context of the process that is being cloned (current process).
+ * @param new_pcb_p Pointer to the PCB of the newly created process.
+ * @param not_used Unused parameter (kept for signature compliance).
+ * @return The original kernel context (kc_in), so the cloning process can continue.
+ */
+KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used);
+
 
 
 /**

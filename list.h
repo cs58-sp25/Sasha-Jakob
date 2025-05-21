@@ -7,7 +7,6 @@
 #define LIST_H
 
 #include <stddef.h>
-#include "memory.h"
 #include <ylib.h>
 #include <hardware.h>
 
@@ -16,8 +15,8 @@
  */
 
 typedef struct list_node {
-    list_node_t *prev;
-    list_node_t *next;
+    struct list_node *prev; // Use struct list_node here
+    struct list_node *next; // Use struct list_node here
 } list_node_t;
 
 typedef struct list {

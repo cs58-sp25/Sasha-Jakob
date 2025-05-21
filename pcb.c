@@ -53,7 +53,7 @@ pcb_t *create_pcb(void) {
 
     // Relationships
     new_pcb->parent = NULL;
-    init_list(&new_pcb->children);
+    list_init(&new_pcb->children);
     new_pcb->waiting_for_children = 0;
 
     // Null out pointers
@@ -85,10 +85,10 @@ void add_to_ready_queue(pcb_t *process) {
     TracePrintf(1, "ENTER add_to_ready_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_DEFAULT) {
-        TracePrintf("ERROR, The state of the process was not PROCESS_DEFAULT.\n");
+        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT.\n");
         return;
     };
 
@@ -101,7 +101,7 @@ void remove_from_ready_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_ready_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_READY) {
         TracePrintf(1, "ERROR, The state of the process was not PROCESS_READY.\n");
@@ -116,11 +116,11 @@ void add_to_delay_queue(pcb_t *process, int ticks) {
     TracePrintf(1, "ENTER add_to_delay_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     // Check if process is already in a queue
     if (process->state != PROCESS_DEFAULT) {
-        TracePrintf("ERROR, The state of the process was not PROCESS_DEFAULT.\n");
+        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT.\n");
         return;
     };
 
@@ -134,7 +134,7 @@ void remove_from_delay_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_delay_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_DELAYED) {
         TracePrintf(1, "ERROR, The state of the process was not PROCESS_DELAYED.\n");
@@ -149,10 +149,10 @@ void add_to_zombie_queue(pcb_t *process) {
     TracePrintf(1, "ENTER add_to_zombie_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_DEFAULT) {
-        TracePrintf("ERROR, The state of the process was not PROCESS_DEFAULT");
+        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT");
         return;
     };
     process->state = PROCESS_ZOMBIE;
@@ -164,7 +164,7 @@ void remove_from_zombie_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_zombie_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_ZOMBIE) {
         TracePrintf(1, "ERROR, The state of the process was not PROCESS_ZOMBIE.\n");
@@ -179,10 +179,10 @@ void add_to_blocked_queue(pcb_t *process) {
     TracePrintf(1, "ENTER add_to_blocked_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_DEFAULT) {
-        TracePrintf("ERROR, The state of the process was not PROCESS_DEFAULT");
+        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT");
         return;
     };
     process->state = PROCESS_BLOCKED;
@@ -194,7 +194,7 @@ void remove_from_blocked_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_blocked_queue.\n");
     if(process == NULL){
         TracePrintf(1, "ERROR, process was not an initialized pcb");
-        return NULL;
+        return;
     }
     if (process->state != PROCESS_BLOCKED) {
         TracePrintf(1, "ERROR, The state of the process was not PROCESS_BLOCKED.\n");
@@ -233,7 +233,7 @@ pcb_t *find_zombie_child(pcb_t *process) {
     }
 
     list_node_t *head = &process->children.head;
-    curr = head->next;
+    list_node_t *curr = head->next;
     // Iterate through process's children list
     while(curr != head){
         pcb_t *curr_pcb = pcb_from_queue_node(curr);
@@ -242,7 +242,7 @@ pcb_t *find_zombie_child(pcb_t *process) {
             TracePrintf(1, "EXIT find_zombie_child: Found zombie child with PID %d.\n", curr_pcb->pid);
             return curr_pcb;
         }
-        curr = curr.next;
+        curr = curr->next;
     }
     // Return NULL if none
     TracePrintf(1, "EXIT find_zombie_child: No zombie child found.\n");
@@ -305,7 +305,7 @@ pcb_t *list_contains_pid(list_t *list, int pid){
     }
     if(list_is_empty(list)) {
         TracePrintf(1, "EXIT list_contains_pid, the list is empty.\n");
-        return;
+        return NULL;
     }
 
     list_node_t *head = &list->head;
@@ -387,25 +387,25 @@ void remove_child(pcb_t *child) {
     TracePrintf(1, "EXIT remove_child.\n");
 }
 
-void orphan_children(pcb_t *parent) {
-    TracePrintf(1, "ENTER orphan_children.\n");
-    if (process == NULL) {
-        TracePrintf(1, "Error: Attempting to orphan children of a NULL PCB.\n");
-        return;
-    }
-    if(list_is_empty(&process->children)) {
-        TracePrintf(1, "EXIT orphan_children the process has no children.\n");
-        return NULL;
-    }
+// void orphan_children(pcb_t *parent) {
+//     TracePrintf(1, "ENTER orphan_children.\n");
+//     if (process == NULL) {
+//         TracePrintf(1, "Error: Attempting to orphan children of a NULL PCB.\n");
+//         return;
+//     }
+//     if(list_is_empty(&process->children)) {
+//         TracePrintf(1, "EXIT orphan_children the process has no children.\n");
+//         return;
+//     }
 
-    if ()
-    while (!list_is_empty(&parent->children)) {
-        pcb_t *child = pcb_from_children_node(pop(&parent->children));
-        if (child->state == PROCESS_ZOMBIE) free(child);
-        else child->parent = NULL;
-    }
-    TracePrintf(1, "EXIT orphan_children.\n");
-}
+//     if ()
+//     while (!list_is_empty(&parent->children)) {
+//         pcb_t *child = pcb_from_children_node(pop(&parent->children));
+//         if (child->state == PROCESS_ZOMBIE) free(child);
+//         else child->parent = NULL;
+//     }
+//     TracePrintf(1, "EXIT orphan_children.\n");
+// }
 
 void free_process_memory(pcb_t *proc) {
     // Free all physical frames mapped in Region 1 page table
@@ -448,7 +448,7 @@ void terminate_process(pcb_t *process, int status) {
     if(process->parent != NULL && process->parent->waiting_for_children){
         remove_from_blocked_queue(process->parent);
         add_to_ready_queue(process->parent);
-        process->parent->user_context->regs[0] = status;
+        process->parent->user_context.regs[0] = status;
 
         free(process);
         return;
