@@ -20,7 +20,7 @@
  * @param pmem_size Size of physical memory in bytes
  * @param uctxt Initial user context to be modified for first process
  */
-//void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt);
+void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt);
 
 
 /**

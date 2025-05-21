@@ -1,7 +1,8 @@
-#include "syscalls.h"
+
+#ifndef _TRAPS_H_
+#define _TRAPS_H_
+
 #include "hardware.h"
-#include "pcb.h"
-#include "yuser.h"
 
 // Trap handler for system calls (TRAP_KERNEL)
 void kernel_handler(UserContext *cont);
@@ -23,3 +24,5 @@ void receive_handler(UserContext *cont);
 
 // Trap handler for terminal output complete (TRAP_TTY_TRANSMIT)
 void transmit_handler(UserContext *cont);
+
+#endif

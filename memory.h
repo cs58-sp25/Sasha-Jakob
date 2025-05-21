@@ -159,12 +159,19 @@ void enable_virtual_memory(void);
 
 
 /**
- * Get physical frame for a virtual address
- * Looks up the physical frame mapped to a virtual address
+ * @brief Get physical frame for a virtual address
  *
- * @param addr Virtual address to look up
- * @param pt Page table to use (NULL for current)
- * @return Physical frame number or -1 if not mapped
+ * Looks up the physical frame mapped to a virtual address.
+ *
+ * @param addr Virtual address to look up.
+ * @param pt Page table to use. If NULL, the function dynamically selects the
+ * appropriate page table:
+ * - For kernel addresses (below VMEM_0_BASE), it uses the global `region0_pt`.
+ * - For user addresses (VMEM_0_BASE and above), it uses `current_process->region1_pt`.
+ * If `pt` is not NULL, it is assumed to be a specific Region 1 page table
+ * to use for the lookup (e.g., when inspecting another process's memory).
+ * @return Physical frame number (PFN) on success, or ERROR (-1) if the page is
+ * not mapped, or if an error occurs (e.g., no current process for user addresses).
  */
 int get_physical_frame(void *addr, struct pte *pt);
 

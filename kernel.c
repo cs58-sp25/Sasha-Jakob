@@ -13,48 +13,58 @@
 #include <yuser.h>
 
 #include "pcb.h"
-#include "sync.h"
-#include "syscalls.h"
 #include "traps.h"
 #include "kernel.h"
 #include "list.h"
 #include "memory.h"
 
-void main(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
+// #include "sync.h"
+// #include "syscalls.h"
+
+
+void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     // Zero-initialize global variables to prevent undefined behavior
     current_process = NULL;
 
     // Print debug information about memory layout to help with debugging
-    TracePrintf(0, "KernelStart: text start = 0x%p\n", _first_kernel_text_page);
-    TracePrintf(0, "KernelStart: data start = 0x%p\n", _first_kernel_data_page);
-    TracePrintf(0, "KernelStart: brk start = 0x%p\n", _orig_kernel_brk_page);
+    // Using %x for hex output as these are memory addresses/page numbers
+    TracePrintf(0, "KernelStart: text start = 0x%x\n", _first_kernel_text_page);
+    TracePrintf(0, "KernelStart: data start = 0x%x\n", _first_kernel_data_page);
+    TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
 
-    // Initialize the interrupt vector table to handle traps and interrupts
-    // This sets up functions to be called when different events occur
+    // Initialize the interrupt vector table to handle traps and interrupts (Checkpoint 8.2.3)
     init_interrupt_vector();
 
-    // Initialize page tables for Region 0 and 1
-    // This function also sets the kernel break address
+    // Initialize page tables for Region 0 and 1 (Checkpoint 8.2.2)
+    // This function should also set up the initial kernel break address.
     init_page_table((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page);
 
-    // Enable virtual memory - this is a critical transition point
-    // After this call, all memory addresses are interpreted as virtual rather than physical
+    // Enable virtual memory - a critical transition point (Checkpoint 8.2.2)
+    // After this call, all memory addresses are interpreted as virtual rather than physical.
     enable_virtual_memory();
 
-    // Create the idle process - runs when no other process is ready
-    // This process will execute the DoIdle function in an infinite loop
+    // Create the idle process - runs when no other process is ready (Checkpoint 8.2.4)
+    // The create_idle_process function should handle setting up idle's Region 1 page table,
+    // kernel stack frames, and configuring its UserContext (PC to DoIdle, SP to user stack top).
     pcb_t *idle_process = create_idle_process(uctxt);
     if (!idle_process) {
         TracePrintf(0, "ERROR: Failed to create idle process\n");
-        Halt();  // System needs at least one process to function
+        Halt(); // System needs at least one process to function; halt if idle creation fails.
     }
 
-    // Return to the idle process's user context
+    // Set the global current_process to the newly created idle process.
+    // This makes idle the first process that the system considers 'running' or ready to run.
+    current_process = idle_process;
+
+    // Return to the idle process's user context (Checkpoint 8.2.4)
+    // This modifies the uctxt pointer provided by the hardware,
+    // so when KernelStart returns, the machine enters user mode and executes DoIdle.
     TracePrintf(0, "Leaving KernelStart, returning to idle process (PID %d)\n", idle_process->pid);
     *uctxt = idle_process->user_context;
 
-    return;
+    return; // Return to user mode, entering the idle loop.
 }
+
 
 void init_interrupt_vector(void) {
     // Allocate memory for interrupt vector table - array of function pointers

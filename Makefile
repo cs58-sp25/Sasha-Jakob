@@ -12,8 +12,10 @@
 K_SRC_DIR = .
 
 # What are the kernel c and include files?
-K_SRCS = kernel.c memory.c pcb.c
-K_INCS = kernel.h memory.h pcb.h ykernel.h yuser.h ylib.h hardware.h
+K_SRCS = kernel.c memory.c pcb.c traps.c list.c
+K_INCS = kernel.h memory.h pcb.h traps.h list.h
+# NOTE -- Add syscalls, sync, 
+
 
 # Where's your user source?
 U_SRC_DIR = ./test

@@ -50,11 +50,11 @@ int list_contains(list_t *list, list_node_t *node) {
     TracePrintf(1, "ENTER list_contains.\n");
     if (node == NULL) {
         TracePrintf(1, "ERROR, The node to check for does not exist.\n");
-        return; 
+        return ERROR; 
     } 
     if (list == NULL) {
         TracePrintf(1, "ERROR, The list to check in does not exist.\n");
-        return; 
+        return ERROR; 
     }
 
     list_node_t *curr = list->head.next;
@@ -88,11 +88,11 @@ void list_remove(list_t *list, list_node_t *node) {
     TracePrintf(1, "EXIT list_remove.\n");
 }
 
-int list_is_empty(list_t *pop) {
+int list_is_empty(list_t *list) {
     TracePrintf(1, "ENTER list_is_empty.\n");
     if (list == NULL) {
         TracePrintf(1, "ERROR, The list to insert in to does not exist.\n");
-        return error; 
+        return ERROR; 
     }
     TracePrintf(1, "EXIT list_is_empty.\n");
     return list->count == 0;
@@ -102,7 +102,6 @@ list_node_t *pop(list_t *list) {
     TracePrintf(1, "ENTER pop.\n");
     if (list_is_empty(list)) {
         TracePrintf(1, "ERROR, The list was empty or the list didn't exist (last trace would clarify).\n");
-        return; 
         return NULL;
     }
 

@@ -387,7 +387,7 @@ void remove_child(pcb_t *child) {
     TracePrintf(1, "EXIT remove_child.\n");
 }
 
-// void orphan_children(pcb_t *parent) {
+void orphan_children(pcb_t *parent) {
 //     TracePrintf(1, "ENTER orphan_children.\n");
 //     if (process == NULL) {
 //         TracePrintf(1, "Error: Attempting to orphan children of a NULL PCB.\n");
@@ -405,7 +405,7 @@ void remove_child(pcb_t *child) {
 //         else child->parent = NULL;
 //     }
 //     TracePrintf(1, "EXIT orphan_children.\n");
-// }
+}
 
 void free_process_memory(pcb_t *proc) {
     // Free all physical frames mapped in Region 1 page table

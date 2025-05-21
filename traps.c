@@ -1,58 +1,59 @@
 #include "traps.h"
 
 
+static void other(void); // Placeholder function for unimplemented traps
+
 void kernel_handler(UserContext* cont){
-    if (ind >= 0 && ind < 256 && syscall_handlers[ind] != NULL){ 
-        // If the syscall exists call it
-        syscall_handlers[index](context);
-    } else {
-        // Otherwise return an error to the User
-        UserContext->regs[0] = ERROR
-    }
+    other();
+    // if (ind >= 0 && ind < 256 && syscall_handlers[ind] != NULL){ 
+    //     // If the syscall exists call it
+    //     syscall_handlers[index](context);
+    // } else {
+    //     // Otherwise return an error to the User
+    //     UserContext->regs[0] = ERROR
+    // }
 }
 
 void clock_handler(UserContext* cont){
-    TracePrintf(1, "There has been a clock trap");
-    // Loops through all delayed processes, decrements their time, and puts them in the ready queue if they're done delaying
-    update_delayed_processes();
-    // Update the current process's run_time
-    pcb_t *curr = current_process;
-    curr->run_time++;
-    // Check if the current process run_time == it's time slice
-        // If so, change the currently schedeuled process using a KCSwitch
-    if(curr->run_time > curr->time_slice){
-        pcb_t *next = peak(ready_queue);
-        if(next != Null){
-            // Set the current process's UC to the given user context
-            curr->user_context = uctxt;
-            // Set the current process's status to the default
-            curr->status = PROCESS_DEFAULT;
-            // Add the process to the ready queue
-            add_to_ready_queue(curr);
+    other();
+    // TracePrintf(1, "There has been a clock trap");
+    // // Loops through all delayed processes, decrements their time, and puts them in the ready queue if they're done delaying
+    // update_delayed_processes();
+    // // Update the current process's run_time
+    // pcb_t *curr = current_process;
+    // curr->run_time++;
+    // // Check if the current process run_time == it's time slice
+    //     // If so, change the currently schedeuled process using a KCSwitch
+    // if(curr->run_time > curr->time_slice){
+    //     pcb_t *next = peak(ready_queue);
+    //     if(next != Null){
+    //         // Set the current process's UC to the given user context
+    //         curr->user_context = uctxt;
+    //         // Set the current process's status to the default
+    //         curr->status = PROCESS_DEFAULT;
+    //         // Add the process to the ready queue
+    //         add_to_ready_queue(curr);
 
-            // Schedule another process
-            next = schedule();
-            // Set the uctxt to the newly scheduled processes uc
-            uctxt = next->user_context;
-        }
+    //         // Schedule another process
+    //         next = schedule();
+    //         // Set the uctxt to the newly scheduled processes uc
+    //         uctxt = next->user_context;
+    //     }
         
-    }
+    // }
 
 }
 
-void other(void){
-    TracePrintf(1, "An unimplemented trap has occured");
-}
 
 void illegal_handler(UserContext* cont){
-    other(void);
+    other();
     //traceprintf something based on the USerContext code value to say what went wrong
     //use exit to kill the process with code ERROR
     //send the process to the zombie queue to be waited on by the parent
 }
 
 void memory_handler(UserContext* cont){
-    other(void);
+    other();
     //check to see if addr is between the bottom of the user stack and the redzone
         //if it is drop the UserStack and carry on with life
     //else 
@@ -63,14 +64,14 @@ void memory_handler(UserContext* cont){
 }
 
 void math_handler(UserContext* cont){
-    other(void);
+    other();
     //traceprintf something based on the USerContext code value to say what went wrong
     //use exit to kill the process with code ERROR
     //send the process to the zombie queue to be waited on by the parent
 }
 
 void receive_handler(UserContext* cont){
-    other(void);
+    other();
     // Determine the terminal which generated the interrupt from code
     // Create a buffer for the incoming line (or reuse a static one)
     // Read the line of input from the terminal hardware
@@ -85,7 +86,7 @@ void receive_handler(UserContext* cont){
 }
 
 void transmit_handler(UserContext* cont){
-    other(void);
+    other();
     // Determine the terminal which generated the interrupt from code
     // Make the terminal no longer busy
 
@@ -96,4 +97,8 @@ void transmit_handler(UserContext* cont){
     // Check if there's more data queued for transmission on this terminal
         // Start transmitting the next line (non-blocking call)
         // Set terminal busy again
+}
+
+static void other(void){
+    TracePrintf(1, "An unimplemented trap has occured");
 }

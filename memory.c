@@ -274,4 +274,56 @@ void remove_temp_mapping(void *addr) {
     WriteRegister(REG_TLB_FLUSH, (unsigned int)addr);
 }
 
+
+int get_physical_frame(void *addr, pte_t *pt) {
+    unsigned int vaddr = (unsigned int)addr;
+    pte_t *page_table_base = NULL;
+    int vpn; // Virtual Page Number
+
+    // Determine the correct page table base and calculate the Virtual Page Number (VPN)
+    if (vaddr >= VMEM_0_BASE) {
+        // Address is in Region 1 (User Space)
+        if (pt != NULL) {
+            // An explicit page table was provided; use it.
+            // This is useful for looking up addresses in a specific process's (other than current) Region 1.
+            page_table_base = pt;
+        } else {
+            // No explicit page table provided, so use the current process's Region 1 page table.
+            if (current_process == NULL || current_process->region1_pt == NULL) {
+                TracePrintf(0, "get_physical_frame: ERROR: No current process or its Region 1 page table for user address 0x%x\n", vaddr);
+                return ERROR;
+            }
+            page_table_base = current_process->region1_pt;
+        }
+        // Calculate VPN for Region 1: subtract the base of Region 1 and then shift.
+        vpn = (vaddr - VMEM_0_BASE) >> PAGESHIFT;
+    } else {
+        // Address is in Region 0 (Kernel Space)
+        // Region 0 virtual addresses always map through the global kernel Region 0 page table.
+        // The 'pt' parameter is disregarded for Region 0 lookups.
+        page_table_base = region0_pt;
+        // Calculate VPN for Region 0: simply shift the address.
+        vpn = vaddr >> PAGESHIFT;
+    }
+
+    // Sanity check: Ensure a valid page table base was successfully determined.
+    if (page_table_base == NULL) {
+        TracePrintf(0, "get_physical_frame: ERROR: Failed to determine valid page table base for virtual address 0x%x\n", vaddr);
+        return ERROR;
+    }
+
+    // Access the corresponding Page Table Entry (PTE) using pointer arithmetic.
+    pte_t *entry = page_table_base + vpn;
+
+    // Check if the page table entry is valid (i.e., the page is mapped).
+    if (!entry->valid) {
+        TracePrintf(4, "get_physical_frame: Virtual address 0x%x (VPN %d) is not mapped (PTE invalid).\n", vaddr, vpn);
+        return ERROR; // Page is not mapped
+    }
+
+    // If the PTE is valid, return the Physical Frame Number (PFN) it contains.
+    TracePrintf(4, "get_physical_frame: Virtual address 0x%x (VPN %d) maps to PFN %d.\n", vaddr, vpn, entry->pfn);
+    return entry->pfn;
+}
+
 // TODO: create kernel_malloc, kernel_free, and perhaps memset
