@@ -14,9 +14,9 @@
 extern int vm_enabled;  // Flag indicating if virtual memory is enabled
 extern void *kernel_brk;  // Current kernel break address
 extern void *user_brk;    // Current user break address
-extern int frame_bitMap[NUM_VPN];  // Bitmap to track free/used frames
-extern pte_t *region0_pt; // Declare it as a pointer to pte_t
-extern pte_t *region1_pt; // Declare it as a pointer to pte_t
+extern int *frame_bitMap;      // Bitmap to track free/used frames
+extern pte_t region0_pt[]; // Page table for Region 0
+extern pte_t region1_pt[]; // Page table for Region 1
 
 
 /**

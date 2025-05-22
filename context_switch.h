@@ -18,27 +18,40 @@ typedef KernelContext *(*kcs_func_t)(KernelContext *, void *, void *);
 
 
 /**
- * Switch between processes
- * Saves current kernel context, changes kernel stack, and returns next context
- * Used for context switching between processes
+ * @brief Performs a low-level kernel context switch.
  *
- * @param kc_in Current kernel context
- * @param curr_pcb_p Pointer to current process PCB
- * @param next_pcb_p Pointer to next process PCB
- * @return Pointer to next process's kernel context
+ * This function is called by KernelContextSwitch to perform the actual context
+ * saving and restoring. It is executed on a special, independent stack.
+ *
+ * @param kc_in A pointer to a temporary copy of the current kernel context
+ * of the process that is being switched OUT.
+ * @param curr_pcb_p A void pointer to the PCB of the current (outgoing) process.
+ * This parameter is not used in this simplified implementation,
+ * as the saving of the outgoing context is assumed to be handled
+ * by the caller (e.g., switch_to_process).
+ * @param next_pcb_p A void pointer to the PCB of the next (incoming) process.
+ *
+ * @return A pointer to the kernel context of the process that should resume execution.
+ * This will be the kernel context of 'next_proc'.
  */
 KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p);
 
 
 /**
- * Clone a process
- * Copies current kernel context and kernel stack to new process
- * Used when creating a new process with Fork()
+ * @brief Clones the current kernel context and stack for a new process.
  *
- * @param kc_in Current kernel context
- * @param new_pcb_p Pointer to new process PCB
- * @param not_used Unused parameter (can be NULL)
- * @return Original kernel context
+ * This function is called by KernelContextSwitch when a new process is being
+ * created (e.g., during a Fork syscall). It copies the kernel context and
+ * kernel stack contents from the current process to the new process.
+ *
+ * @param kc_in A pointer to a temporary copy of the current kernel context
+ * of the process that is initiating the copy (the parent).
+ * @param new_pcb_p A void pointer to the PCB of the new (child) process.
+ * @param not_used This parameter is not used in KCCopy.
+ *
+ * @return A pointer to the original kernel context (kc_in). This ensures the
+ * parent process continues its execution after the cloning operation.
+ * Returns NULL on failure to copy the kernel stack.
  */
 KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used);
 
