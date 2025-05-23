@@ -15,7 +15,6 @@ void *kernel_brk = NULL;  // Current kernel break address
 void *user_brk = NULL;    // Current user break address
 int *frame_bitMap;      // Bitmap to track free/used frames
 pte_t region0_pt[MAX_PT_LEN]; // Page table for Region 0
-pte_t region1_pt[MAX_PT_LEN]; // Page table for Region 1
 
 
 int allocate_frame(void) {
@@ -77,8 +76,8 @@ int SetKernelBrk(void *addr) {
         }
     } else {
         // After VM enabled: need to actually allocate/deallocate frames and update page tables.
-        void *old_brk_page_aligned = UP_TO_PAGE((unsigned int)kernel_brk); // Current heap end, page-aligned
-        void *new_brk_page_aligned = UP_TO_PAGE((unsigned int)addr);       // Requested heap end, page-aligned
+        void *old_brk_page_aligned = (void *)(UP_TO_PAGE(kernel_brk) * PAGESIZE); // Current heap end, page-aligned
+        void *new_brk_page_aligned = (void *)(UP_TO_PAGE(addr) * PAGESIZE);       // Requested heap end, page-aligned
 
         // If decreasing break, deallocate pages and update PTEs
         if (new_brk_page_aligned < old_brk_page_aligned) {
@@ -138,7 +137,7 @@ int SetKernelBrk(void *addr) {
 }
 
 
-void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_brk_start, unsigned int pmem_size) {
+void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int kernel_brk_start, unsigned int pmem_size) {
     TracePrintf(0, "Initializing page table...\n");
 
     // Dynamically allocate frame_bitMap based on the actual physical memory size.
@@ -160,11 +159,6 @@ void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_br
         region0_pt[i].valid = 0;
         region0_pt[i].prot = 0;
         region0_pt[i].pfn = 0;
-    }
-
-    // Initialize physical frames used by the kernel's initial load.
-    for (int i = 0; i < kernel_text_start && i < num_physical_frames; i++) {
-        frame_bitMap[i] = 1;
     }
 
     // Initialize mappings for kernel text, data, and heap sections in the Region 0 page table.
@@ -193,14 +187,14 @@ void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_br
     TracePrintf(0, "Kernel text, data, and heap initialized with %d total entries\n", kernel_brk_start - kernel_text_start);
 
     // Set the kernel break (heap top) using SetKernelBrk.
-    void *kernel_brk = UP_TO_PAGE(kernel_brk_start * PAGESIZE);
+    void *kernel_brk = (void *)(UP_TO_PAGE(kernel_brk_start * PAGESIZE) * PAGESIZE);
     if (SetKernelBrk(kernel_brk) != 0) {
         TracePrintf(0, "ERROR: Failed to set kernel break to address %p\n", kernel_brk);
     }
 
     // Initialize mappings for the kernel stack in the Region 0 page table.
-    int base_kernelStack_vpn_index = KERNEL_STACK_BASE / PAGESIZE;
-    int kernelStack_limit_vpn_index = KERNEL_STACK_LIMIT / PAGESIZE;
+    int base_kernelStack_vpn_index = KERNEL_STACK_BASE >> PAGESHIFT;
+    int kernelStack_limit_vpn_index = KERNEL_STACK_LIMIT >> PAGESHIFT;
     for (int vpn_index = base_kernelStack_vpn_index; vpn_index < kernelStack_limit_vpn_index; vpn_index++) {
         // Safety checks
         if (vpn_index >= MAX_PT_LEN) {
@@ -221,50 +215,14 @@ void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_br
 
     // Set hardware registers for Region 0 page table.
     int numPages_inRegion0 = VMEM_0_LIMIT / PAGESIZE; // Total number of pages in Region 0
-    WriteRegister(REG_PTBR0, (unsigned int)region0_pt); // Set base physical address of Region 0 page table (now a static array address)
+    WriteRegister(REG_PTBR0, (u_long)region0_pt); // Set base physical address of Region 0 page table (now a static array address)
     WriteRegister(REG_PTLR0, (unsigned int)numPages_inRegion0); // Set number of entries in Region 0 page table
-
-
-    /* --------------------------------------Region 1 page table ------------------------------------- */
-    // Initialize all entries in the Region 1 page table to invalid.
-    for (int i = 0; i < MAX_PT_LEN; i++) {
-        region1_pt[i].valid = 0;
-        region1_pt[i].prot = 0;
-        region1_pt[i].pfn = 0;
-    }
-
-    // Initialize the first entry for Region 1.
-    int first_region1_vpn_index = 0;
-
-    pte_t *entry_r1 = &region1_pt[first_region1_vpn_index]; // Access the first PTE
-    entry_r1->valid = 1;
-    entry_r1->prot = PROT_READ | PROT_WRITE | PROT_EXEC; // Assuming user code will need read, write, and execute
-
-    // Ensure the physical frame number for Region 1's first mapped page is within bounds.
-    if (numPages_inRegion0 >= num_physical_frames) {
-        TracePrintf(0, "ERROR: Cannot map Region 1's first page. No physical frames available after kernel space (PFN %d >= total frames %d).\n", numPages_inRegion0, num_physical_frames);
-        entry_r1->valid = 0; // Invalidate the entry if no space
-    } else {
-        entry_r1->pfn = numPages_inRegion0; // Map to the first available physical frame after kernel's mapped space
-        frame_bitMap[entry_r1->pfn] = 1; // Mark the *physical frame* as used in the bitmap
-        TracePrintf(0, "Region 1 page table initialized with 1 total entry, mapping virtual page %d to physical frame %d\n", first_region1_vpn_index, entry_r1->pfn);
-    }
-
-    // Set hardware registers for Region 1 page table.
-    WriteRegister(REG_PTBR1, (unsigned int)region1_pt); // Set base physical address of Region 1 page table (now a static array address)
-    WriteRegister(REG_PTLR1, (unsigned int)1); // Set limit of Region 1 page table to 1 entry initially
-    TracePrintf(0, "Wrote region 1 page table base register to %p\n", region1_pt);
-    TracePrintf(0, "Wrote region 1 page table limit register to %u\n", (unsigned int)1);
 }
 
-void enable_virtual_memory(void) {
-    // Write 1 to REG_VM_ENABLE register to enable virtual memory
-    // This is a critical transition point - after this, all addresses are virtual
-    WriteRegister(REG_VM_ENABLE, 1);
 
-    // Update global flag to track that VM is now enabled
-    // This flag helps kernel code know if physical or virtual addressing is in use
-    vm_enabled = 1;
+void enable_virtual_memory(void) {
+    WriteRegister(REG_VM_ENABLE, 1); // Write 1 to REG_VM_ENABLE register to enable virtual memory
+    vm_enabled = 1; // Update global flag to track that VM is now enabled
     TracePrintf(0, "Virtual memory enabled\n");
 }
 

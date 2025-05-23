@@ -55,10 +55,14 @@ pcb_t *create_pcb(void) {
     list_init(&new_pcb->children);
     new_pcb->waiting_for_children = 0;
 
-    // Null out pointers
-    new_pcb->region1_pt = NULL;
+    // Initialize region 1 page table as invalid
+    for (int i = 0; i < MAX_PT_LEN; i++) {
+        new_pcb->region1_pt[i].valid = 0;
+        new_pcb->region1_pt[i].prot = 0;
+        new_pcb->region1_pt[i].pfn = 0;
+    }
+    
     new_pcb->brk = NULL;
-    // Maybe memset the kernel stack frames to 0
     // These should all be set by the calling function, idk how memory works
 
     new_pcb->tty_read_buffer = NULL;
@@ -77,6 +81,7 @@ pcb_t *create_pcb(void) {
     TracePrintf(1, "EXIT create_pcb.\n");
     return new_pcb;
 }
+
 
 // FOR ANY add_to_{}_queue CALL MAKE SURE THE PROCESS IS EITHER (1) NEW or (2)HAD REMOVE_FROM_{}_QUEUE CALLED ON IT
 // The pcb must have it's state set to default for it to work

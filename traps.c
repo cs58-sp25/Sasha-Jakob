@@ -1,7 +1,23 @@
 #include "traps.h"
 
+trap_handler_t syscall_handlers[TRAP_VECTOR_SIZE];
 
 static void other(void); // Placeholder function for unimplemented traps
+
+void trap_init(void) {
+    // Each entry contains the address of the function to handle that specific trap
+    syscall_handlers[TRAP_KERNEL] = kernel_handler;        // System calls from user processes
+    syscall_handlers[TRAP_CLOCK] = clock_handler;          // Timer interrupts for scheduling
+    syscall_handlers[TRAP_ILLEGAL] = illegal_handler;      // Illegal instruction exceptions
+    syscall_handlers[TRAP_MEMORY] = memory_handler;        // Memory access violations and stack growth
+    syscall_handlers[TRAP_MATH] = math_handler;            // Math errors like division by zero
+    syscall_handlers[TRAP_TTY_RECEIVE] = receive_handler;   // Terminal input available
+    syscall_handlers[TRAP_TTY_TRANSMIT] = transmit_handler; // Terminal output complete
+
+    // Write the address of vector table to REG_VECTOR_BASE register
+    WriteRegister(REG_VECTOR_BASE, (unsigned int)syscall_handlers);
+    TracePrintf(0, "Interrupt vector table initialized at 0x%p\n", syscall_handlers);
+}
 
 void kernel_handler(UserContext* cont){
     other();

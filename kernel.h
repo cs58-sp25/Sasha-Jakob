@@ -24,13 +24,16 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt);
 
 
 /**
- * init_interrupt_vector - Sets up the interrupt vector table
+ * @brief Creates a new process and initializes its PCB.
  *
- * Creates and initializes the table of trap handlers for all
- * system interrupts, exceptions, and traps.
+ * This function allocates a new PCB, sets up its initial state, and prepares
+ * the user context for the new process. It also handles the allocation of
+ * kernel stack frames and Region 1 page table entries.
+ *
+ * @param uctxt A pointer to the UserContext to be used for the new process.
+ * @return A pointer to the newly created process's PCB on success, or NULL on failure.
  */
-void init_interrupt_vector(void);
-
+pcb_t *create_process(UserContext *uctxt);
 
 
 /**

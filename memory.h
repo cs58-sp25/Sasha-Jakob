@@ -16,7 +16,6 @@ extern void *kernel_brk;  // Current kernel break address
 extern void *user_brk;    // Current user break address
 extern int *frame_bitMap;      // Bitmap to track free/used frames
 extern pte_t region0_pt[]; // Page table for Region 0
-extern pte_t region1_pt[]; // Page table for Region 1
 
 
 /**
@@ -63,7 +62,7 @@ int SetKernelBrk(void *addr);
  * @param kernel_data_start First page of kernel data
  * @param kernel_brk_start First page after kernel data
  */
-void init_page_table(int kernel_text_start, int kernel_data_start, int kernel_brk_start, unsigned int pmem_size);
+void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int kernel_brk_start, unsigned int pmem_size);
 
 
 
