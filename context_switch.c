@@ -7,253 +7,123 @@
 #include "context_switch.h"
 #include <hardware.h>
 #include "kernel.h"
-#include "list.h" // Assuming list.h contains pcb_t definition or is included by kernel.h
-#include "memory.h" // Assuming memory.h contains allocate_frame, free_frame, map_kernel_stack, setup_temp_mapping, remove_temp_mapping
+#include "pcb.h"
+#include "memory.h"
 
-// Global variable to keep track of the currently running process.
-// This is defined in kernel.c, but declared as extern here for use.
-extern pcb_t *current_process;
+#define TEMP_MAPPING_VADDR (void *)(KERNEL_STACK_BASE - PAGESIZE)
 
 
 KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
-    // Cast the void pointer to a pcb_t pointer for the next process.
+    pcb_t *curr_proc = (pcb_t *)curr_pcb_p;
     pcb_t *next_proc = (pcb_t *)next_pcb_p;
 
-    // TracePrintf for debugging, indicating the process being switched to.
-    TracePrintf(3, "KCSwitch: Performing low-level kernel context switch to PID %d.\n", next_proc->pid);
+    TracePrintf(3, "KCSwitch: From PID %d to PID %d.\n", curr_proc ? curr_proc->pid : -1, next_proc->pid);
 
-    // In a full implementation, if 'curr_pcb_p' were used, the 'kc_in'
-    // would be copied into 'curr_proc->kernel_context' here.
-    // For this simplified version, we assume the caller of KernelContextSwitch
-    // (e.g., switch_to_process) has already saved the necessary state of the
-    // outgoing process or that the KernelContextSwitch mechanism implicitly handles it.
+    // Copy the current KernelContext (kc_in) into the old PCB [cite: 457]
+    if (curr_proc) {
+        curr_proc->kernel_context = *kc_in;
+    }
 
-    // Return the kernel context of the next process. This context will be loaded
-    // by the KernelContextSwitch hardware support function, allowing 'next_proc'
-    // to resume execution from where it was last suspended.
+    // Update the global current_process variable
+    current_process = next_proc;
+
+    // Change the Region 0 kernel stack mappings to those for the new PCB [cite: 457]
+    map_kernel_stack(next_proc->kernel_stack_pages);
+
+    // Change Region 1 Page Table Base Register (REG_PTBR1) to the new PCB's Region 1 page table
+    WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
+    // Also update REG_PTLR1 if your Region 1 page table size can vary, though for now assuming fixed size.
+
+    // Flush the TLB to ensure new mappings are used [cite: 457]
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
+
+    // Return a pointer to the KernelContext in the new PCB [cite: 457]
     return &next_proc->kernel_context;
 }
 
 
-KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used) {
-    // Cast the void pointer to a pcb_t pointer for the new process.
-    pcb_t *new_proc = (pcb_t *)new_pcb_p;
+KernelContext *KCCopy(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
+    // kc_in: KernelContext of the calling context (e.g., KernelStart or a parent process for Fork)
+    // curr_pcb_p: Pointer to the current PCB (NULL for initial KernelStart call)
+    // next_pcb_p: Pointer to the new PCB (initPCB in this case)
 
-    // TracePrintf for debugging, indicating the new process being cloned.
-    TracePrintf(3, "KCCopy: Cloning kernel context and stack for new process PID %d.\n", new_proc->pid);
+    pcb_t *new_proc = (pcb_t *)next_pcb_p;
+    TracePrintf(1, "KCCopy: Setting up kernel context for PID %d.\n", new_proc->pid);
 
-    // Copy the contents of the current kernel context (kc_in) to the new process's PCB.
-    // This effectively gives the new process an identical kernel execution state as the parent
-    // at the point of the KCCopy call.
-    memcpy(&new_proc->kernel_context, kc_in, sizeof(KernelContext));
+    // Save the incoming KernelContext (kc_in) into the new PCB's kernel_context field.
+    // This kc_in contains the state of the caller function just before KernelContextSwitch was invoked.
+    new_proc->kernel_context = *kc_in;
 
-    // Copy the contents of the current kernel stack to the new process's kernel stack frames.
-    // KERNEL_STACK_MAXSIZE / PAGESIZE calculates the number of physical frames
-    // that comprise the kernel stack. This ensures the new process has a copy
-    // of the parent's kernel stack contents.
-    if (copy_kernel_stack(current_process->kernel_stack_pages, new_proc->kernel_stack_pages, KERNEL_STACK_MAXSIZE / PAGESIZE) != 0) {
-        // If copying the kernel stack fails, print an error and return NULL.
-        // In a more robust system, proper cleanup of partially allocated resources
-        // for 'new_proc' would be necessary here.
-        TracePrintf(0, "KCCopy: ERROR: Failed to copy kernel stack for new process PID %d.\n", new_proc->pid);
-        return NULL;
-    }
+    // Copy the current kernel stack contents into the new kernel stack frames. [cite: 457]
+    // The current kernel stack is in Region 0, mapped from KERNEL_STACK_BASE.
+    // The new kernel stack frames are physical frames stored in new_proc->kernel_stack_pages.
 
-    // Return the original kernel context (kc_in). This allows the parent process
-    // (the one that called KernelContextSwitch with KCCopy) to continue its
-    // execution from where it left off, as if nothing happened beyond a function call.
-    return kc_in;
-}
+    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE / PAGESIZE;
+    char *current_kernel_stack_base = (char *)KERNEL_STACK_BASE;
 
-// Placeholder for other functions that would typically be in context_switch.c
-// These would be implemented as part of the overall kernel design.
-
-/**
- * @brief Saves the user context from the hardware into the process's PCB.
- * @param uctxt The UserContext provided by the hardware trap.
- * @param proc The PCB of the current process.
- */
-void save_user_context(UserContext *uctxt, pcb_t *proc) {
-    // Copy all fields from uctxt to proc->user_context
-    memcpy(&proc->user_context, uctxt, sizeof(UserContext));
-    TracePrintf(4, "save_user_context: User context saved for PID %d.\n", proc->pid);
-}
-
-/**
- * @brief Restores the user context from the process's PCB to the hardware's UserContext structure.
- * @param uctxt The UserContext structure to be populated for hardware restoration.
- * @param proc The PCB of the process whose context is to be restored.
- */
-void restore_user_context(UserContext *uctxt, pcb_t *proc) {
-    // Copy all fields from proc->user_context to uctxt
-    memcpy(uctxt, &proc->user_context, sizeof(UserContext));
-    TracePrintf(4, "restore_user_context: User context restored for PID %d.\n", proc->pid);
-}
-
-/**
- * @brief Copies the contents of physical frames used by one kernel stack to another.
- * @param src_frames Array of physical frame numbers for the source kernel stack.
- * @param dst_frames Array of physical frame numbers for the destination kernel stack.
- * @param num_frames The number of frames in the kernel stack.
- * @return 0 on success, ERROR on failure.
- */
-int copy_kernel_stack(int *src_frames, int *dst_frames, int num_frames) {
-    TracePrintf(3, "copy_kernel_stack: Copying %d frames from source to destination kernel stack.\n", num_frames);
-
-    // Loop through each frame of the kernel stack
-    for (int i = 0; i < num_frames; i++) {
-        // Calculate the virtual address of the source kernel stack frame in Region 0.
-        // This assumes the kernel stack is always mapped at KERNEL_STACK_BASE in Region 0.
-        void *src_vaddr = (void *)(KERNEL_STACK_BASE + (i * PAGESIZE));
-
-        // Temporarily map the destination physical frame into the kernel's address space
-        // to allow copying its contents. The setup_temp_mapping function would
-        // typically use a temporary virtual page in Region 0 that is not currently used.
-        void *dst_temp_vaddr = setup_temp_mapping(dst_frames[i]);
-
-        if (dst_temp_vaddr == NULL) {
-            TracePrintf(0, "copy_kernel_stack: ERROR: Failed to set up temporary mapping for destination frame %d.\n", dst_frames[i]);
-            // In a real system, you might need to clean up any mappings already made
-            // in this loop if an error occurs.
-            return ERROR;
+    for (int i = 0; i < num_kernel_stack_pages; i++) {
+        // Temporarily map the destination frame into Region 0 for copying. [cite: 457]
+        // `setup_temp_mapping` should map the physical frame `new_proc->kernel_stack_pages[i]`
+        // to a temporary virtual address in Region 0 (e.g., KERNEL_STACK_BASE - PAGESIZE).
+        void *mapped_dest_addr = setup_temp_mapping(new_proc->kernel_stack_pages[i]);
+        if (mapped_dest_addr == NULL) {
+            TracePrintf(0, "ERROR: KCCopy: Failed to set up temporary mapping for frame %d.\n", new_proc->kernel_stack_pages[i]);
+            // Return NULL to indicate failure to KernelContextSwitch
+            return NULL;
         }
 
-        // Copy the contents of the source frame (accessible via its virtual address)
-        // to the temporarily mapped destination frame.
-        memcpy(dst_temp_vaddr, src_vaddr, PAGESIZE);
+        // Copy contents of the current kernel stack page to the temporarily mapped destination
+        memcpy(mapped_dest_addr, current_kernel_stack_base + (i * PAGESIZE), PAGESIZE);
 
-        // Remove the temporary mapping for the destination frame after copying.
-        // This frees up the temporary virtual page.
-        remove_temp_mapping(dst_temp_vaddr);
+        // Remove the temporary mapping after copying
+        remove_temp_mapping(mapped_dest_addr);
     }
 
-    TracePrintf(3, "copy_kernel_stack: Kernel stack copy completed successfully.\n");
-    return 0; // Success
+    // Return the new process's kernel context for the switch.
+    // Since KCCopy is called via KernelContextSwitch, returning this will cause the hardware
+    // to load this kernel context.
+    return &new_proc->kernel_context;
 }
 
+
 /**
- * @brief Initiates a context switch to the specified process.
- *
- * This function prepares the system for a context switch by updating global
- * process pointers, hardware registers (PTBR1, PTLR1), and flushing the TLB,
- * then invokes the low-level KernelContextSwitch.
- *
- * @param next A pointer to the PCB of the process to switch to.
- * @return 0 on success, ERROR on failure.
+ * @brief Sets up a temporary mapping in Region 0 for a given physical frame.
+ * @param pfn The physical frame number to map.
+ * @return The virtual address where the frame is mapped, or NULL on error.
  */
-int switch_to_process(pcb_t *next) {
-    TracePrintf(2, "switch_to_process: Initiating context switch from PID %d to PID %d.\n",
-                current_process ? current_process->pid : -1, next->pid);
+void *setup_temp_mapping(int pfn) {
+    TracePrintf(1, "setup_temp_mapping: Mapping PFN %d to temporary address %p.\n", pfn, TEMP_MAPPING_VADDR);
+    // In a real implementation, you would:
+    // 1. Ensure TEMP_MAPPING_VADDR is a safe, dedicated virtual page in Region 0.
+    // 2. Map this virtual page to the given physical frame 'pfn' in region0_pt.
+    // 3. Flush the TLB entry for TEMP_MAPPING_VADDR to ensure the new mapping is visible.
 
-    // Update the global 'current_process' pointer to the new process.
-    // This is crucial for subsequent kernel operations to correctly identify the active process.
-    current_process = next;
-    TracePrintf(4, "switch_to_process: Current process updated to PID %d.\n", current_process->pid);
+    // Placeholder: Assuming map_page can handle this
+    map_page(region0_pt, VPN_FROM_ADDR(TEMP_MAPPING_VADDR), pfn, PROT_READ | PROT_WRITE);
+    WriteRegister(REG_TLB_FLUSH, (unsigned long)TEMP_MAPPING_VADDR); // Flush specific TLB entry
 
-    // Update the hardware's Region 1 Page Table Base Register (REG_PTBR1)
-    // to point to the new process's Region 1 page table. This changes the
-    // user-mode virtual address space.
-    WriteRegister(REG_PTBR1, (unsigned int)current_process->region1_pt);
-    // Update the hardware's Region 1 Page Table Limit Register (REG_PTLR1).
-    // This defines the size of Region 1.
-    WriteRegister(REG_PTLR1, (unsigned int)((VMEM_REGION_SIZE - VMEM_0_LIMIT) / PAGESIZE));
-
-    // Map the kernel stack of the new process into Region 0.
-    // This involves updating the Region 0 page table entries that correspond
-    // to the kernel stack area to point to the physical frames of the new process's
-    // kernel stack.
-    if (map_kernel_stack(current_process->kernel_stack_pages) != 0) {
-        TracePrintf(0, "switch_to_process: ERROR: Failed to map kernel stack for PID %d.\n", current_process->pid);
-        return ERROR;
-    }
-
-    // Flush the Translation Lookaside Buffer (TLB) for Region 1 and the kernel stack.
-    // This ensures that any stale cached translations are invalidated and the
-    // hardware uses the newly updated page table entries.
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_KSTACK);
-
-    // Perform the low-level kernel context switch.
-    // KernelContextSwitch will save the current kernel context (of the process
-    // that called switch_to_process) and load the kernel context of 'next'.
-    // The 'NULL' for curr_pcb_p is a placeholder; in some designs, the outgoing
-    // PCB might be passed here for saving its context.
-    // When this call returns, it means 'current_process' (which is now 'next')
-    // has been scheduled back in.
-    int kc_returned = KernelContextSwitch(KCSwitch, NULL, (void *)next);
-
-    TracePrintf(2, "switch_to_process: Returned from KCSwitch. Process PID %d resumed.\n", current_process->pid);
-
-    return 0; // Success
-}
-
-
-/**
- * @brief Initializes the kernel context for a new process.
- * @param proc The PCB of the new process.
- * @return 0 on success, ERROR on failure.
- */
-int init_kernel_context(pcb_t *proc) {
-    // This is a placeholder. A real implementation would:
-    // 1. Allocate memory for the kernel context if it's not part of the PCB struct.
-    // 2. Initialize the KernelContext structure (e.g., set initial stack pointer,
-    //    program counter for kernel entry, and other register values).
-    //    For a new process, the kernel context would typically be set up to
-    //    return to a user-mode entry point after the first context switch.
-    TracePrintf(1, "init_kernel_context: (Not yet implemented - placeholder)\n");
-    return 0; // Assuming success for now
+    return TEMP_MAPPING_VADDR;
 }
 
 /**
- * @brief Initializes the user context for a new process.
- * @param proc The PCB of the new process.
- * @param entry_point The virtual address of the program's entry point.
- * @param stack_pointer The virtual address of the top of the user stack.
- */
-void save_user_context(pcb_t *proc, void *entry_point, void *stack_pointer) {
-    // Clear general purpose registers (proc->user_context.regs).
-    // Set initial Processor Status Register (PSR) value if applicable.
-    TracePrintf(1, "Saving user context to current process PCB with Stack pointer address: %p\n", stack_pointer);
-    proc->user_context.pc = entry_point;
-    proc->user_context.sp = stack_pointer;
-    return;
-}
-
-/**
- * @brief Sets up a temporary mapping in the kernel's address space for a given physical frame.
- * @param frame The physical frame number to map.
- * @return The virtual address of the temporary mapping, or NULL on failure.
- */
-void *setup_temp_mapping(int frame) {
-    // This is a placeholder. A real implementation would:
-    // 1. Find an unused virtual page in Region 0 for temporary mapping.
-    // 2. Create a PTE for this virtual page, mapping it to 'frame' with appropriate permissions.
-    // 3. Flush the TLB for this specific virtual page.
-    // 4. Return the calculated virtual address.
-    TracePrintf(1, "setup_temp_mapping: (Not yet implemented - placeholder for frame %d)\n", frame);
-    // For demonstration, we'll return a dummy address. In a real system, this needs a valid
-    // temporary mapping mechanism.
-    // A common approach is to reserve a small, fixed area in Region 0 for temporary mappings.
-    // For now, we'll assume a direct mapping for simplicity, which is NOT how it works in a real kernel.
-    // This needs to be replaced with actual page table manipulation.
-    return (void *)(frame * PAGESIZE); // DUMMY: This assumes direct physical to virtual mapping, which is incorrect for temporary mappings.
-}
-
-/**
- * @brief Removes a temporary mapping from the kernel's address space.
+ * @brief Removes a temporary mapping from Region 0.
  * @param addr The virtual address of the temporary mapping to remove.
  */
 void remove_temp_mapping(void *addr) {
-    // This is a placeholder. A real implementation would:
-    // 1. Determine the virtual page number from 'addr'.
-    // 2. Invalidate the PTE for that virtual page in the Region 0 page table.
-    // 3. Flush the TLB entry for that virtual page.
-    TracePrintf(1, "remove_temp_mapping: (Not yet implemented - placeholder for address %p)\n", addr);
-    // DUMMY: No actual unmapping here.
+    TracePrintf(1, "remove_temp_mapping: Unmapping address %p.\n", addr);
+    // In a real implementation, you would:
+    // 1. Invalidate the PTE for the given virtual address 'addr' in region0_pt.
+    // 2. Flush the TLB entry for that virtual page.
+
+    // Placeholder: Assuming unmap_page is available
+    // unmap_page(region0_pt, VPN_FROM_ADDR(addr)); // You would need to implement unmap_page if not available
+    pte_t *entry = region0_pt + VPN_FROM_ADDR(addr);
+    entry->valid = 0; // Invalidate the PTE
+    WriteRegister(REG_TLB_FLUSH, (unsigned long)addr); // Flush specific TLB entry
 }
 
 /**
- * @brief Maps the kernel stack of the current process into Region 0.
+ * @brief Maps the kernel stack of the current process (identified by its physical frames) into Region 0.
  *
  * This function is called during a context switch to ensure that the kernel
  * stack of the incoming process is correctly mapped into the fixed kernel
@@ -264,12 +134,21 @@ void remove_temp_mapping(void *addr) {
  * @return 0 on success, ERROR on failure.
  */
 int map_kernel_stack(int *kernel_stack_frames) {
-    // This is a placeholder. A real implementation would:
-    // 1. Iterate through the virtual pages corresponding to KERNEL_STACK_BASE
-    //    to KERNEL_STACK_LIMIT.
-    // 2. For each virtual page, update its PTE in the Region 0 page table
-    //    to point to the corresponding physical frame from 'kernel_stack_frames'.
-    // 3. Ensure appropriate permissions (PROT_READ | PROT_WRITE) are set.
-    TracePrintf(1, "map_kernel_stack: (Not yet implemented - placeholder)\n");
-    return 0; // Assuming success for now
+    TracePrintf(1, "map_kernel_stack: Re-mapping kernel stack in Region 0.\n");
+
+    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE / PAGESIZE;
+    void *kernel_stack_vaddr_start = (void *)KERNEL_STACK_BASE;
+
+    for (int i = 0; i < num_kernel_stack_pages; i++) {
+        // Map each physical frame of the new kernel stack to its corresponding
+        // virtual page in Region 0.
+        // Permissions: PROT_READ | PROT_WRITE for kernel stack.
+        map_page(region0_pt, VPN_FROM_ADDR(kernel_stack_vaddr_start + i * PAGESIZE),
+                 kernel_stack_frames[i], PROT_READ | PROT_WRITE);
+    }
+    // A full TLB flush (TLB_FLUSH_ALL) typically happens in KCSwitch itself after all mappings are done.
+    // But specific flush for kernel stack region might be needed if not doing a full flush.
+    // WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0); // Flush Region 0 TLB entries related to kernel stack
+
+    return 0;
 }

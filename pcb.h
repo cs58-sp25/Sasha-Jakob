@@ -11,6 +11,8 @@
 #include <ylib.h>
 #include "list.h"
 
+extern pcb_t *current_process;  // Pointer to the currently executing process
+
 /**
  * Process Control Block structure
  * Contains all information about a process

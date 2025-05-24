@@ -6,7 +6,8 @@
 
 #include "pcb.h"
 
-// Global variables
+/* -------------------------------------------------------------- Define Global Variables -------------------------------------------------- */
+pcb_t *current_process = NULL;
 list_t *ready_queue;
 list_t *delay_queue;
 list_t *blocked_queue;
