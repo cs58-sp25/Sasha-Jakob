@@ -15,12 +15,12 @@ Hardware   Kernel heap usage: 7 blocks allocated, 1916 bytes total
 Yalnix     KernelStart: text start = 0x10
 Yalnix     KernelStart: data start = 0x13
 Yalnix     KernelStart: brk start = 0x19
-Hardware       | WriteRegister(REG_VECTOR_BASE,0x028fe0)
-Yalnix     Interrupt vector table initialized at 0x0x28fe0
+Hardware       | WriteRegister(REG_VECTOR_BASE,0x028f60)
+Yalnix     Interrupt vector table initialized at 0x0x28f60
 Yalnix     Initializing page table...
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 8 blocks allocated, 3968 bytes total
-Yalnix     Region 0 page table base physical address: 0x28dc0
+Yalnix     Region 0 page table base physical address: 0x28d40
 Yalnix     Kernel data/heap permission for page: 19 is 3
 Yalnix     Kernel data/heap permission for page: 20 is 3
 Yalnix     Kernel data/heap permission for page: 21 is 3
@@ -28,11 +28,8 @@ Yalnix     Kernel data/heap permission for page: 22 is 3
 Yalnix     Kernel data/heap permission for page: 23 is 3
 Yalnix     Kernel data/heap permission for page: 24 is 3
 Yalnix     Kernel text, data, and heap initialized with 9 total entries
-Yalnix     SetKernelBrk: Called with addr=0x64000000, current kernel_brk=(nil), vm_enabled=0
-Yalnix     SetKernelBrk: ERROR: Requested address 0x64000000 out of bounds for kernel heap (min 0x13, max 0xfc000)
-Yalnix     ERROR: Failed to set kernel break to address 0x64000000
 Yalnix     Kernel stack initialized with 2 total entries
-Hardware       | WriteRegister(REG_PTBR0,0x028dc0)
+Hardware       | WriteRegister(REG_PTBR0,0x028d40)
 Hardware       | WriteRegister(REG_PTLR0,0x000080)
 Yalnix     ENTER create_idle_process.
 Yalnix     ENTER create_pcb.
@@ -59,7 +56,7 @@ Hardware   initializing TLB to be empty
 Hardware   PhysLimit 32000, my_break 32000
 Hardware   clearing TLB
 Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x2b204, PTLR1 0x1
-Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x28dc0, PTLR0 0x80
+Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x28d40, PTLR0 0x80
 Hardware   moving kernel text,data,heap into TLB
 Hardware   PageInTLB[16] addr 0x20000: 0 -> 1
 Hardware   PageInTLB[17] addr 0x22000: 0 -> 1
@@ -91,14 +88,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 1
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -106,14 +103,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 2
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -121,14 +118,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 3
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -136,14 +133,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 4
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -151,14 +148,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 5
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -166,14 +163,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 6
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -181,14 +178,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 7
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -196,14 +193,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 8
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -211,14 +208,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 9
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -226,14 +223,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 10
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -241,14 +238,14 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 11
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
 Hardware   ========= Hardware receives signal ==============
@@ -256,13 +253,373 @@ Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 12
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   ----
 Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22dc4 for trap TRAP_CLOCK
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
 Hardware   | HELPER WARNING: stale TLB frames in Region 1
-Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f93549
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 13
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 14
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 15
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 16
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 17
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 18
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 19
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 20
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 21
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 22
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 23
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 24
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 25
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 26
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 27
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 28
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 29
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 30
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 31
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 32
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 33
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 34
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 35
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   ----
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 36
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
+Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     An unimplemented trap has occuredHardware   ----
+Hardware   | Back from Yalnix handler 0x22d85 for trap TRAP_CLOCK
+Hardware   | HELPER WARNING: stale TLB frames in Region 1
+Hardware   | Off to usermode SP [region 1] 0x1ffea3 | PC [vdso] 0xf7f21549
 Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
 Hardware   ----
