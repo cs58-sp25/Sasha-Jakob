@@ -56,7 +56,7 @@ CC = gcc
 
 DDIR58 = ${YALNIX_FRAMEWORK}
 LIBDIR = $(DDIR58)/lib
-INCDIR = "$(DDIR58)/include"
+INCDIR = $(DDIR58)/include
 ETCDIR = $(DDIR58)/etc
 
 # any extra loading flags...

@@ -63,8 +63,8 @@ int SetKernelBrk(void *addr) {
     }
 
     if (!vm_enabled) {
-        // Before VM enabled: just track the kernel break within its valid range.
-        // We only allow increasing the break, as deallocation isn't managed here.
+        // Before VM enabled: just track the kernel break within its valid range
+        // We only allow increasing the break, as deallocation isn't managed here
         if (addr > kernel_brk) {
             kernel_brk = addr;
             return 0;
@@ -146,19 +146,13 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
     if (frame_bitMap == NULL) {
         TracePrintf(0, "ERROR: Failed to allocate frame_bitMap\n");
     }
-
-    // Mark physical frame 0 as reserved (it's often used for initial kernel setup or left unused for safety).
-    if (num_physical_frames > 0) { // Ensure there's at least one frame
-        frame_bitMap[0] = 1;
-    }
+    frame_bitMap[0] = 1;
 
     TracePrintf(0, "Region 0 page table base physical address: %p\n", region0_pt);
 
     // Initialize all entries in the Region 0 page table to invalid.
     for (int i = 0; i < MAX_PT_LEN; i++) {
-        region0_pt[i].valid = 0;
-        region0_pt[i].prot = 0;
-        region0_pt[i].pfn = 0;
+        unmap_page(region0_pt, i);
     }
 
     // Initialize mappings for kernel text, data, and heap sections in the Region 0 page table.
@@ -176,13 +170,11 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
         pte_t *entry = &region0_pt[vpn_index]; // Access the PTE directly by VPN index
         entry->valid = 1;
         if (vpn_index < kernel_data_start) {
-            entry->prot = PROT_READ | PROT_EXEC; // Text section: read and execute permissions
+            map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_EXEC);
         } else {
-            entry->prot = PROT_READ | PROT_WRITE; // Data/heap sections: read and write permissions
+            map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_WRITE);
             TracePrintf(0, "Kernel data/heap permission for page: %d is %d\n", vpn_index, entry->prot);
         }
-        entry->pfn = vpn_index; // Identity mapping: virtual page number = physical frame number
-        frame_bitMap[entry->pfn] = 1; // Mark the corresponding physical frame as used
     }
     TracePrintf(0, "Kernel text, data, and heap initialized with %d total entries\n", kernel_brk_start - kernel_text_start);
 
@@ -205,11 +197,7 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
             TracePrintf(0, "ERROR: Attempted to identity map Kernel Stack virtual page %d to physical frame %d which is beyond pmem_size.\n", vpn_index, vpn_index);
             break;
         }
-        pte_t *entry = &region0_pt[vpn_index]; // Access the PTE directly by index
-        entry->valid = 1;
-        entry->prot = PROT_READ | PROT_WRITE; // Kernel stack: read and write permissions
-        entry->pfn = vpn_index; // Identity mapping for kernel stack
-        frame_bitMap[entry->pfn] = 1; // Mark the corresponding physical frame as used
+        map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_WRITE);
     }
     TracePrintf(0, "Kernel stack initialized with %d total entries\n", (KERNEL_STACK_LIMIT - KERNEL_STACK_BASE) / PAGESIZE);
 
@@ -227,160 +215,21 @@ void enable_virtual_memory(void) {
 }
 
 
-
-int map_kernel_stack(int *kernel_stack_pages) {
-    // Calculate vpn starting at KERNEL_STACK_BASE
-    // For each frame in kernel_stack_pages:
-    //   Map vpn to frame with PROT_READ | PROT_WRITE permissions
-    // Return 0 on success
-}
-
-struct pte *get_region0_pt(void) {
-    // Return pointer to Region 0 page table
-    return region0_pt;
-}
-
-
 void map_page(pte_t *page_table_base, int vpn, int pfn, int prot) {
-    // Calculate the address of the specific Page Table Entry (PTE)
-    // by adding the virtual page number (VPN) as an offset to the page table base.
-    // Since page_table_base is of type pte_t*, adding 'vpn' automatically
-    // accounts for sizeof(pte_t) for each step (pointer arithmetic).
-    pte_t *entry = page_table_base + vpn;
-
-    // Set the valid bit to 1, indicating this is a valid mapping.
-    entry->valid = 1;
-
-    // Set the protection bits (read, write, execute) as specified.
-    entry->prot = prot;
-
-    // Set the Physical Frame Number (PFN) this virtual page maps to.
-    entry->pfn = pfn;
-
-    // Construct the virtual address for the page to flush the TLB.
-    // This is done by shifting the VPN left by PAGESHIFT to get the page's base address.
-    unsigned int virtual_address_to_flush = (unsigned int)vpn << PAGESHIFT;
-
-    // Flush the Translation Lookaside Buffer (TLB) entry for this virtual page.
-    // This ensures that the MMU re-reads the updated page table entry on next access.
-    WriteRegister(REG_TLB_FLUSH, virtual_address_to_flush);
+    pte_t *entry = page_table_base + vpn; // Calculate the address of the specific Page Table Entry (PTE)
+    entry->valid = 1;  // Set the valid bit to 1 or 0 as specified
+    entry->prot = prot; // Set the protection bits (read, write, execute) as specified
+    entry->pfn = pfn; // Set the Physical Frame Number (PFN) this virtual page maps to
+    frame_bitMap[entry->pfn] = 1; // Mark the corresponding physical frame as used
 }
 
 
 
 void unmap_page(pte_t *page_table_base, int vpn) {
-    // Calculate the address of the specific Page Table Entry (PTE)
-    // by adding the virtual page number (VPN) as an offset to the page table base.
     pte_t *entry = page_table_base + vpn;
-
     // Invalidate the page table entry by setting the valid bit to 0.
-    // This tells the MMU that this virtual page is no longer mapped.
     entry->valid = 0;
-
-    // It's good practice to also clear other bits like protection and PFN
-    // when unmapping, although setting valid=0 is the primary action to unmap.
     entry->prot = 0;
-    entry->pfn = 0; // Or a sentinel value like 0 if frame 0 is never allocated
-
-    // Construct the virtual address for the page to flush the TLB.
-    unsigned int virtual_address_to_flush = (unsigned int)vpn << PAGESHIFT;
-
-    // Flush the Translation Lookaside Buffer (TLB) entry for this virtual page.
-    // This is crucial to ensure the MMU does not use a stale, cached mapping
-    // for this page after it has been unmapped in the page table.
-    WriteRegister(REG_TLB_FLUSH, virtual_address_to_flush);
+    entry->pfn = 0;
+    frame_bitMap[entry->pfn] = 0; // Mark the corresponding physical frame as free
 }
-
-
-void *setup_temp_mapping(int pfn) {
-    // Define a virtual address for temporary mapping. This should be a page
-    // that is guaranteed to be unused and available for temporary mappings.
-    // For example, one page below the kernel stack base.
-    void *temp_vaddr = (void *)(KERNEL_STACK_BASE - PAGESIZE);
-    struct pte *region0_pt = get_region0_pt(); // Get pointer to Region 0 page table
-
-    TracePrintf(5, "setup_temp_mapping: Mapping pfn %d to temporary vaddr %p.\n", pfn, temp_vaddr);
-
-    // Check if the temporary virtual address is already mapped
-    // This is a simplified check; a more robust solution would track temporary mappings
-    // or use a dedicated temporary mapping page.
-    if (get_physical_frame(temp_vaddr, region0_pt) != -1) {
-        TracePrintf(0, "setup_temp_mapping: ERROR: Temporary mapping vaddr %p is already in use.\n", temp_vaddr);
-        return NULL; // Or unmap it first if it's safe to do so
-    }
-
-    // Map the physical frame to the temporary virtual address in Region 0
-    map_page(region0_pt, (int)((unsigned int)temp_vaddr >> PAGESHIFT), pfn, PROT_READ | PROT_WRITE);
-
-    // Flush TLB for the specific temporary mapping to ensure consistency
-    WriteRegister(REG_TLB_FLUSH, (unsigned int)temp_vaddr);
-
-    return temp_vaddr;
-}
-
-
-void remove_temp_mapping(void *addr) {
-    struct pte *region0_pt = get_region0_pt(); // Get pointer to Region 0 page table
-
-    TracePrintf(5, "remove_temp_mapping: Unmapping temporary vaddr %p.\n", addr);
-
-    // Unmap the virtual page
-    unmap_page(region0_pt, (int)((unsigned int)addr >> PAGESHIFT));
-
-    // Flush TLB for the specific temporary mapping
-    WriteRegister(REG_TLB_FLUSH, (unsigned int)addr);
-}
-
-
-int get_physical_frame(void *addr, pte_t *pt) {
-    unsigned int vaddr = (unsigned int)addr;
-    pte_t *page_table_base = NULL;
-    int vpn; // Virtual Page Number
-
-    // Determine the correct page table base and calculate the Virtual Page Number (VPN)
-    if (vaddr >= VMEM_0_BASE) {
-        // Address is in Region 1 (User Space)
-        if (pt != NULL) {
-            // An explicit page table was provided; use it.
-            // This is useful for looking up addresses in a specific process's (other than current) Region 1.
-            page_table_base = pt;
-        } else {
-            // No explicit page table provided, so use the current process's Region 1 page table.
-            if (current_process == NULL || current_process->region1_pt == NULL) {
-                TracePrintf(0, "get_physical_frame: ERROR: No current process or its Region 1 page table for user address 0x%x\n", vaddr);
-                return ERROR;
-            }
-            page_table_base = current_process->region1_pt;
-        }
-        // Calculate VPN for Region 1: subtract the base of Region 1 and then shift.
-        vpn = (vaddr - VMEM_0_BASE) >> PAGESHIFT;
-    } else {
-        // Address is in Region 0 (Kernel Space)
-        // Region 0 virtual addresses always map through the global kernel Region 0 page table.
-        // The 'pt' parameter is disregarded for Region 0 lookups.
-        page_table_base = region0_pt;
-        // Calculate VPN for Region 0: simply shift the address.
-        vpn = vaddr >> PAGESHIFT;
-    }
-
-    // Sanity check: Ensure a valid page table base was successfully determined.
-    if (page_table_base == NULL) {
-        TracePrintf(0, "get_physical_frame: ERROR: Failed to determine valid page table base for virtual address 0x%x\n", vaddr);
-        return ERROR;
-    }
-
-    // Access the corresponding Page Table Entry (PTE) using pointer arithmetic.
-    pte_t *entry = page_table_base + vpn;
-
-    // Check if the page table entry is valid (i.e., the page is mapped).
-    if (!entry->valid) {
-        TracePrintf(4, "get_physical_frame: Virtual address 0x%x (VPN %d) is not mapped (PTE invalid).\n", vaddr, vpn);
-        return ERROR; // Page is not mapped
-    }
-
-    // If the PTE is valid, return the Physical Frame Number (PFN) it contains.
-    TracePrintf(4, "get_physical_frame: Virtual address 0x%x (VPN %d) maps to PFN %d.\n", vaddr, vpn, entry->pfn);
-    return entry->pfn;
-}
-
-// TODO: create kernel_malloc, kernel_free, and perhaps memset

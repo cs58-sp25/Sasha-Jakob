@@ -187,24 +187,6 @@ int switch_to_process(pcb_t *next) {
     return 0; // Success
 }
 
-/**
- * @brief Dispatches the next process from the ready queue.
- *
- * This function is responsible for selecting the next process to run.
- * If the ready queue is empty, it switches to the idle process.
- *
- * @return The result of the switch_to_process call (0 on success, ERROR on failure).
- */
-int dispatch_next_process(void) {
-    // This is a placeholder. A real implementation would involve:
-    // 1. Dequeueing the next process from a global ready queue.
-    // 2. If the queue is empty, setting 'next' to the idle process.
-    // 3. Calling switch_to_process with the selected 'next' process.
-    TracePrintf(1, "dispatch_next_process: (Not yet implemented - placeholder)\n");
-    // For now, returning ERROR or similar to indicate unhandled state.
-    // This function would typically call switch_to_process.
-    return ERROR;
-}
 
 /**
  * @brief Initializes the kernel context for a new process.
@@ -227,23 +209,14 @@ int init_kernel_context(pcb_t *proc) {
  * @param proc The PCB of the new process.
  * @param entry_point The virtual address of the program's entry point.
  * @param stack_pointer The virtual address of the top of the user stack.
- * @return 0 on success, ERROR on failure.
  */
-int init_user_context(pcb_t *proc, void *entry_point, void *stack_pointer) {
-    // This is a placeholder. A real implementation would:
-    // 1. Initialize proc->user_context fields.
-    // 2. Set proc->user_context.pc to entry_point.
-    // 3. Set proc->user_context.sp to stack_pointer.
-    // 4. Clear general purpose registers (proc->user_context.regs).
-    // 5. Set initial Processor Status Register (PSR) value if applicable.
-    TracePrintf(1, "init_user_context: (Not yet implemented - placeholder)\n");
+void save_user_context(pcb_t *proc, void *entry_point, void *stack_pointer) {
+    // Clear general purpose registers (proc->user_context.regs).
+    // Set initial Processor Status Register (PSR) value if applicable.
+    TracePrintf(1, "Saving user context to current process PCB with Stack pointer address: %p\n", stack_pointer);
     proc->user_context.pc = entry_point;
     proc->user_context.sp = stack_pointer;
-    // Clear general purpose registers
-    for (int i = 0; i < GREGS; i++) {
-        proc->user_context.regs[i] = 0;
-    }
-    return 0; // Assuming success for now
+    return;
 }
 
 /**

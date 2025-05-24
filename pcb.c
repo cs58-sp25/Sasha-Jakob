@@ -11,7 +11,6 @@ list_t *ready_queue;
 list_t *delay_queue;
 list_t *blocked_queue;
 list_t *zombie_queue;
-int next_pid = 1;  // Start PIDs at 1
 
 int init_pcb_system(void) {
     TracePrintf(1, "ENTER init_pcb_system.\n");
@@ -39,7 +38,7 @@ pcb_t *create_pcb(void) {
     } // If it failed return NULL
 
     // Assign unique PID
-    new_pcb->pid = next_pid++;
+    new_pcb->pid = 0;
 
     // Set initial state
     new_pcb->state = PROCESS_READY;
