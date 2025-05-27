@@ -211,8 +211,8 @@ pcb_t *create_init_process(UserContext *uctxt, char *cmd_args[]) {
     initPCB->state = PROCESS_READY;
     initPCB->parent = NULL; // Init has no parent
     init_list_head(&initPCB->children);
-    initPCB->exit_status = 0;
-    initPCB->p_brk = (void *)USER_VM_AREA_BASE; // Will be adjusted by LoadProgram
+    initPCB->exit_code = 0;
+    initPCB->brk = (void *)USER_VM_AREA_BASE; // Will be adjusted by LoadProgram
 
     // Determine init program name from cmd_args or default to "init" [cite: 457]
     char *init_program_name = "init";
@@ -228,7 +228,7 @@ pcb_t *create_init_process(UserContext *uctxt, char *cmd_args[]) {
     }
 
     // Load the "init" program into initPCB's Region 1 address space [cite: 457]
-    int load_status = LoadProgram(init_program_name, init_args, initPCB->region1_pt, &initPCB->user_context);
+    int load_status = LoadProgram(init_program_name, init_args, initPCB);
     if (load_status != SUCCESS) {
         TracePrintf(0, "ERROR: Failed to load init program %s (status %d).\n", init_program_name, load_status);
         // Clean up allocated resources if LoadProgram fails
@@ -243,7 +243,7 @@ pcb_t *create_init_process(UserContext *uctxt, char *cmd_args[]) {
     // This effectively transfers the initial kernel execution state to init.
     // KCCopy will be the function that saves the incoming KernelContext (from KernelStart)
     // and copies the stack.
-    initPCB->kernel_context = KernelContextSwitch(KCCopy, NULL, initPCB);
+    initPCB->kernel_context = (KernelContext *)KernelContextSwitch(KCCopy, NULL, initPCB);
     if (initPCB->kernel_context == NULL) {
         TracePrintf(0, "ERROR: KCCopy failed for init process.\n");
         // Handle error and cleanup

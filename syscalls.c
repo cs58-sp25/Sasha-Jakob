@@ -40,7 +40,7 @@ void SysUnimplemented(UserContext *uctxt){
 void SysFork(UserContext *uctxt) {
     // Create a new PCB object for the new process
     // Clone the page table for region 1
-
+    
     // (for now, cow might be implemented later) 
     // copy the data from all of userland over to new pages
     
@@ -52,16 +52,17 @@ void SysFork(UserContext *uctxt) {
 }
 
 void SysExec(UserContext *uctxt) {
+    TracePrintf(1, "Enter SysExec.\n")
     // Get the filename and args from user space
-    // Load the program, likely requires a function
-    // Get the current process's pcb
-    // Reset the pcb's user context and pcb parts
-    // Reset the program's memory, loading in the program code simultaneously
-    // Setup the page table for the process
-    // Reset the user context
-    // Setup the PCBs stack and arguments
-    // Context switch
-
+    char *filename = (char*) uctxt->regs[0];
+    char **argvec = (char**) uctxt->regs[1];
+    // Load the program, then context switch
+    LoadProgram(filename, argvec, current_process);
+    current_process->state = PROCESS_DEFAULT;
+    add_to_ready_queue(current_process);
+    pcb_t *next = schedule();
+    uctxt = next->user_context;
+    TracePrintf(1, "Exit SysExec.\n")
 }
 
 void SysExit(UserContext *uctxt) {
@@ -94,13 +95,13 @@ void SysWait(UserContext *uctxt) {
 }
 
 void SysGetPID(UserContext *uctxt){
-    TracePrintf(1, "ENTER SysGetPID.\n", (unsigned int) addr);
+    TracePrintf(1, "ENTER SysGetPID.\n");
     // Input of GetPID is void so no need to check args
     // Grab the pid from the pcb in curr_process
     int pid = current_process->pid;
     // Put the pid of the current process into the correct register
     uctxt->regs[0] = (u_long) pid;
-    TracePrintf(1, "EXIT SysGetPID.\n", (unsigned int) addr);
+    TracePrintf(1, "EXIT SysGetPID.\n");
 }
 
 void SysBrk(UserContext *uctxt){
@@ -179,7 +180,7 @@ void SysDelay(UserContext *uctxt){
     
     // Look at the ready queue to see if another exists, currently this should just be the idle process
     // Eventually idle should be stored separately maybe and returned if no ready processes exist.
-    pcb_t *next == peak(ready_queue);
+    pcb_t *next == peek(ready_queue);
     if(next != NULL){
         // Set return to 0 for when the process is done delaying
         uctxt->regs[0] = 0;

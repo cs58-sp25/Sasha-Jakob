@@ -202,7 +202,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
         pte_t entry = proc->region1_pt[i];
-        int nf = allocateFreeFrame();
+        int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
@@ -220,7 +220,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     for (int i = data_pg1; i < data_pg1 + data_npg; i++) {
         pte_t entry = proc->region1_pt[i];
-        int nf = allocateFreeFrame();
+        int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
@@ -238,7 +238,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++) {
         pte_t entry = proc->region1_pt[i];
-        int nf = allocateFreeFrame();
+        int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;

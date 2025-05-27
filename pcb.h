@@ -11,8 +11,6 @@
 #include <ylib.h>
 #include "list.h"
 
-extern pcb_t *current_process;  // Pointer to the currently executing process
-
 /**
  * Process Control Block structure
  * Contains all information about a process
@@ -33,7 +31,7 @@ typedef enum {
 typedef struct pcb {
     // Process context
     UserContext user_context;      // User context (saved registers, PC, etc.)
-    KernelContext kernel_context;  // Kernel context
+    KernelContext *kernel_context;  // Kernel context
 
     // Process identification
     int pid;   // Process ID
