@@ -57,7 +57,11 @@ void SysExec(UserContext *uctxt) {
     char *filename = (char*) uctxt->regs[0];
     char **argvec = (char**) uctxt->regs[1];
     // Load the program, then context switch
-    LoadProgram(filename, argvec, current_process);
+    int rc = LoadProgram(filename, argvec, current_process);
+    if(rc == ERROR) {
+        Traceprintf(1, "ERROR, Loading the program has failed.\n");
+        // Probably need to write code here to make it so a new process is loaded made to run
+    }
     current_process->state = PROCESS_DEFAULT;
     add_to_ready_queue(current_process);
     pcb_t *next = schedule();
@@ -76,20 +80,40 @@ void SysExit(UserContext *uctxt) {
 }
 
 void SysWait(UserContext *uctxt) {
-    // Get the filename and argvec from the UserContext
+    traceprintf(1, "Enter SysWait.\n");
     // Check to see if the process has any children
         // If not return an error
+    if(list_is_empty(current_process->children)){
+        uctxt->regs[0] = ERROR;
+        traceprintf(1, "ERROR, the process has no children to wait for.\n");
+        reutrn;
+    }
+
+    // Get the status pointer
+    int *status_ptr = (int *)regs[0];
     // Check to see if the process has any children currently waiting, if there are
         // grab the child's PID and exit status
+    pcb_t *z_child = find_zombie_children(current_process);
     // If no children are waiting 
         // add the parent to the waiting queue
         // set it's waiting_child to true
         // Context Switch
         // When the parent is unblocked check which of it's children are done
         // Grab the child's PID and exit status
+    if (z_child == NULL){
+        current_process->state = PROCESS_DEFAULT;
+        current_process->waiting_for_children = 1;
+        add_to_blocked_queue(current_process);
+        pcb_t *next = schedule();
+        uctxt = next->user_context;
+    }
     // Remove the child from the list of children
-    // if the exit status was not succes
-        // return the exit status
+    else {
+        remove_from_zombie_queue(z_child);
+        if(status_ptr != NULL) &status_ptr = z_child->exit_status;
+        UserContext->regs[0] = z_child->pid;
+        free(z_child); // Need to go back and make sure terminate_process clears all other parts of memory as well. Maybe need to write a special function
+    }
     // else return the the child's PID
 
 }
@@ -197,7 +221,7 @@ void SysDelay(UserContext *uctxt){
         uctxt = next->user_context;
     } else {
         TracePrintf(1, "ERROR, there was no other process to put in ready.\n");
-        uctxt->regs[0] = error;
+        uctxt->regs[0] = ERROR;
         return;
 
     }
