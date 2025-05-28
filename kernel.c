@@ -19,8 +19,8 @@
 #include "memory.h"
 #include "context_switch.h"
 #include "load_program.c"
-// #include "sync.h"
-// #include "syscalls.h"
+#include "sync.h"
+#include "syscalls.h"
 
 
 /* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/

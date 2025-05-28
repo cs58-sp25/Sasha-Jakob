@@ -6,7 +6,7 @@
 
 typedef void (*trap_handler_t)(UserContext *uctxt);
 
-extern trap_handler_t syscall_handlers[TRAP_VECTOR_SIZE]; // Array of syscall handlers
+extern trap_handler_t trap_handlers[TRAP_VECTOR_SIZE]; // Array of syscall handlers
 
 void trap_init(void); // Initialize the trap handlers
 

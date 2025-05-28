@@ -1,9 +1,9 @@
 #include "sync.h"
 // Might have to change to starting this in kernel.c and setting sync counter to 0
 extern sync_obj_t *sync_table[MAX_SYNC];  // Storing all sync objects (pipes, locks, cvars)
-extern int global_sync_counter;
+extern int global_sync_counter = 0;
 
-int InitSyncObject(sync_type_t type, void *object, int *idp){
+int InitSyncObject(sync_type_t type, void *object){
     // allocate a new sync object
         // if it fails return an error
     // set the sync object's id and type
@@ -12,16 +12,37 @@ int InitSyncObject(sync_type_t type, void *object, int *idp){
         // throw an error if invalid type somehow
     // add the sync object to the global sync table
     // increment the global sync counter
-    // return 0
+    // return idp
 }
 
 int SyncInitPipe(int *pipe_idp){
+    TracePrintf(1, "Enter SyncInitPipe.\n");
     // If there are too many syncing objects return an error
-    // Allocate the new pipe at *pipe_id
-        // If it fails return error
+    if(global_sync_counter > MAX_SYNCS){
+        TracePrintf(1, "ERROR, the maximum number of synchronization constants has been reached");
+        return ERROR;
+    }
     // initialize the pipe fields
+    pipe_t *new_pipe = (pipe_t *)malloc(sizeof(pipe_t));
+    if(new_pipe = NULL){
+        TracePrintf(1, "ERROR, the new pipe could not be allocated.\n");
+    }
+    new_pipe->read_pos = 0;
+    new_pipe->write_pos = 0;
+    new_pipe->bytes_in_buffer = 0;
+    list_init(new_pipe->readers);
+    list_init(new_pipe->writers);
+    new_pipe->open_for_read = true;
+    new_pipe->open_for_write = true;
     // Init the sync object with InitSyncObject
-    // Return the return of InitSyncObject
+    int rc = InitSyncObject(PIPE, (void *)new_pipe);
+    if(rc == ERROR){
+        TracePrintf(1, "ERROR, there was an issue with allocating the synchonization object.\n");
+    }
+    // Return the return of InitSyncObject and set the idp value to the returned id
+    &pipe_idp = rc;
+    TracePrintf(1, "Exit SyncInitPipe.\n");
+    return SUCCESS;
 }
 
 void SyncShiftPipeBuffer(pipe_t *pipe, int len){
@@ -86,12 +107,30 @@ int SyncWritePipe(int pipe_id, void *buf, int len){
 }
 
 int SyncInitLock(int *lock_idp){
-    // malloc the lock
-        // if it fails return error
-    // initialize the lock fields
+    TracePrintf(1, "Enter SyncInitLock.\n");
+    // If there are too many syncing objects return an error
+    if(global_sync_counter > MAX_SYNCS){
+        TracePrintf(1, "ERROR, the maximum number of synchronization constants has been reached");
+        return ERROR;
+    }
+    // initialize the pipe fields
+    lock_t *new_lock= (lock_t *)malloc(sizeof(lock_t));
+    if(new_lock = NULL){
+        TracePrintf(1, "ERROR, the new lock could not be allocated.\n");
+    }
+    new_lock->locked = false;
+    new_lock->owner = NULL;
+    list_init(new_lock->waiters);
     // Init the sync object with InitSyncObject
-    // Return the return of InitSyncObject
-
+    int rc = InitSyncObject(LOCK, (void *)new_lock);
+    if(rc == ERROR){
+        TracePrintf(1, "ERROR, there was an issue with allocating the synchonization object.\n");
+        return ERROR;
+    }
+    // Return the return of InitSyncObject and set the idp value to the returned id
+    &lock_idp = rc;
+    TracePrintf(1, "Exit SyncInitLock.\n");
+    return SUCCESS;
 }
 
 int SyncLockAcquire(int lock_id){
@@ -129,11 +168,28 @@ int SyncLockRelease(int lock_id){
 }
 
 int SyncInitCvar(int *lock_idp){
-    // malloc the cvar
-        // if it fails return error
+    TracePrintf(1, "Enter SyncInitCvar.\n");
+    // If there are too many syncing objects return an error
+    if(global_sync_counter > MAX_SYNCS){
+        TracePrintf(1, "ERROR, the maximum number of synchronization constants has been reached");
+        return ERROR;
+    }
     // initialize the cvar fields
+    cvar_t *new_cvar= (cvar_t *)malloc(sizeof(cvar_t));
+    if(new_cvar = NULL){
+        TracePrintf(1, "ERROR, the new cvar could not be allocated.\n");
+    }
+    list_init(new_cvar->waiters);
     // Init the sync object with InitSyncObject
-    // Return the return of InitSyncObject
+    int rc = InitSyncObject(CVAR, (void *)new_cvar);
+    if(rc == ERROR){
+        TracePrintf(1, "ERROR, there was an issue with allocating the synchonization object.\n");
+        return ERROR;
+    }
+    // Return the return of InitSyncObject and set the idp value to the returned id
+    &lock_idp = rc;
+    TracePrintf(1, "Exit SyncInitCvar.\n");
+    return SUCCESS;
 
 }
 
@@ -199,4 +255,16 @@ int SyncReclaimSync(int id){
     // Set the sync table entry to NULL
     // return 0
 
+}
+
+int GetNewIPD(void){
+    // Finds the next free ipd (loops over byte array)
+    // Increment the sync counter
+    // returns the ipd
+    return 0;
+}
+
+void FreeIPD(int ipd){
+    // Sets the byte array to 0 at ipd
+    // decrements the sync counter
 }

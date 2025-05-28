@@ -14,22 +14,19 @@ typedef struct pipe {
     int read_pos;
     int write_pos;
     int bytes_in_buffer;
-    int pipe_id;
-    struct list_node readers;
-    struct list_node writers;
+    struct list readers;
+    struct list writers;
     bool open_for_read;
     bool open_for_write;
 } pipe_t;
 
 typedef struct lock {
-    int lock_id;
     bool locked;
     pcb_t *owner;
-    struct list_node waiters;
+    struct list waiters;
 } lock_t;
 
 typedef struct cvar {
-    int cvar_id;
     struct list_node waiters;
 } cvar_t;
 
@@ -73,5 +70,7 @@ int SyncCvarBroadcast(int cvar_id);
 int SyncCvarWait(int cvar_id, int lock_id);
 
 int SyncReclaimSync(int id);
+int GetNewIPD(void);
+void FreeIPD(int ipd);
 
 #endif
