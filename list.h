@@ -79,5 +79,6 @@ int list_is_empty(list_t *list);
  */
 list_node_t* pop(list_t *list);
 
+list_node_t *peek(list_t *list);
 
 #endif /* LIST_H */

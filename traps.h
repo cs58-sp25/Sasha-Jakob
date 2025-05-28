@@ -3,10 +3,11 @@
 #define _TRAPS_H_
 
 #include "hardware.h"
+#include "syscalls.h"
 
 typedef void (*trap_handler_t)(UserContext *uctxt);
 
-extern trap_handler_t trap_handlers[TRAP_VECTOR_SIZE]; // Array of syscall handlers
+extern trap_handler_t trap_handlers[TRAP_VECTOR_SIZE]; // Array of trap handlers
 
 void trap_init(void); // Initialize the trap handlers
 

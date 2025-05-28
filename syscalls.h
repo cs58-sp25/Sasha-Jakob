@@ -1,9 +1,6 @@
-#ifndef _SYSCALLS_H_
-#define _SYSCALLS_H_
-
-#include "hardware.h"
+#include <hardware.h>
+#include <yuser.h>
 #include "pcb.h"
-#include "yuser.h"
 #include "sync.h"
 #include "memory.h"
 
@@ -29,6 +26,4 @@ void SysSignal(UserContext *uctxt);
 void SysBroadcast(UserContext *uctxt);
 void SysCvarWait(UserContext *uctxt);
 void SysReclaim(UserContext *uctxt);
-
-
-#endif //_SYSCALLS_H_
+pcb_t *schedule();

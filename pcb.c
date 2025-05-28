@@ -452,7 +452,7 @@ void terminate_process(pcb_t *process, int status) {
     if(process->parent != NULL && process->parent->waiting_for_children){
         remove_from_blocked_queue(process->parent);
         add_to_ready_queue(process->parent);
-        process->parent->user_context.regs[0] = status;
+        process->parent->user_context->regs[0] = status;
 
         free(process);
         return;

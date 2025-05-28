@@ -50,8 +50,8 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     // load_program(cmd_args[0], cmd_args, idle_process); // Load the initial program into the idle process
 
     // Set the idle process pcb values
-    idle_process->user_context.sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
-    idle_process->user_context.pc = &DoIdle; // Set the program counter to the idle function
+    idle_process->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
+    idle_process->user_context->pc = &DoIdle; // Set the program counter to the idle function
 
     current_process = idle_process; // Set the global 'current_process' to the newly created idle process
     uctxt->pc = &DoIdle; // Set the PC to the idle function
@@ -141,7 +141,7 @@ pcb_t *create_process(UserContext *uctxt){
     // Assign important values to the new process PCB
     int pid = helper_new_pid(new_pcb->region1_pt);
     new_pcb->pid = pid;
-    new_pcb->user_context = *uctxt; // Copy the UserContext from the argument
+    new_pcb->user_context = uctxt; // Copy the UserContext from the argument
 
     // Set hardware registers for Region 1 page table
     WriteRegister(REG_PTBR1, (u_long)new_pcb->region1_pt); // Set base physical address of Region 1 page table (now a static array address)

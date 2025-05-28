@@ -117,7 +117,7 @@ list_node_t *pop(list_t *list) {
     return ret;
 }
 
-list_node_t *peak(list_t *list){
+list_node_t *peek(list_t *list){
     if(list_is_empty(list)){
         TracePrintf(1, "ERROR, The list was empty or the list didn't exist (last trace would clarify).\n");
         return NULL;
