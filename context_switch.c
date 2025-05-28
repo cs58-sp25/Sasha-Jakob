@@ -21,7 +21,7 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
 
     // Copy the current KernelContext (kc_in) into the old PCB [cite: 457]
     if (curr_proc) {
-        curr_proc->kernel_context = *kc_in;
+        curr_proc->kernel_context = kc_in;
     }
 
     // Update the global current_process variable
@@ -52,7 +52,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) 
 
     // Save the incoming KernelContext (kc_in) into the new PCB's kernel_context field.
     // This kc_in contains the state of the caller function just before KernelContextSwitch was invoked.
-    new_proc->kernel_context = *kc_in;
+    new_proc->kernel_context = kc_in;
 
     // Copy the current kernel stack contents into the new kernel stack frames. [cite: 457]
     // The current kernel stack is in Region 0, mapped from KERNEL_STACK_BASE.
@@ -136,7 +136,7 @@ void remove_temp_mapping(void *addr) {
 int map_kernel_stack(int *kernel_stack_frames) {
     TracePrintf(1, "map_kernel_stack: Re-mapping kernel stack in Region 0.\n");
 
-    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE / PAGESIZE;
+    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE >> PAGESHIFT;
     void *kernel_stack_vaddr_start = (void *)KERNEL_STACK_BASE;
 
     for (int i = 0; i < num_kernel_stack_pages; i++) {

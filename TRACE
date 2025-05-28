@@ -13,50 +13,60 @@ Hardware   ----
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 7 blocks allocated, 1916 bytes total
 Yalnix     KernelStart: text start = 0x10
-Yalnix     KernelStart: data start = 0x13
-Yalnix     KernelStart: brk start = 0x19
-Hardware       | WriteRegister(REG_VECTOR_BASE,0x029000)
-Yalnix     Interrupt vector table initialized at 0x0x29000
+Yalnix     KernelStart: data start = 0x14
+Yalnix     KernelStart: brk start = 0x1a
+Hardware       | WriteRegister(REG_VECTOR_BASE,0x02a3c0)
+Yalnix     Interrupt vector table initialized at 0x0x2a3c0
+Yalnix     ENTER init_pcb_system.
+Yalnix     ENTER create_list.
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 8 blocks allocated, 1932 bytes total
+Yalnix     ENTER list_init.
+Yalnix     EXIT list_init.
+Yalnix     EXIT create_list.
+Yalnix     ENTER create_list.
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 9 blocks allocated, 1948 bytes total
+Yalnix     ENTER list_init.
+Yalnix     EXIT list_init.
+Yalnix     EXIT create_list.
+Yalnix     ENTER create_list.
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 10 blocks allocated, 1964 bytes total
+Yalnix     ENTER list_init.
+Yalnix     EXIT list_init.
+Yalnix     EXIT create_list.
+Yalnix     ENTER create_list.
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 11 blocks allocated, 1980 bytes total
+Yalnix     ENTER list_init.
+Yalnix     EXIT list_init.
+Yalnix     EXIT create_list.
+Yalnix     EXIT init_pcb_system.
 Yalnix     Initializing page table...
 Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 8 blocks allocated, 3968 bytes total
-Yalnix     Region 0 page table base physical address: 0x28de0
-Yalnix     Kernel data/heap permission for page: 19 is 3
+Hardware   Kernel heap usage: 12 blocks allocated, 4032 bytes total
+Yalnix     Region 0 page table base physical address: 0x2a1a0
 Yalnix     Kernel data/heap permission for page: 20 is 3
 Yalnix     Kernel data/heap permission for page: 21 is 3
 Yalnix     Kernel data/heap permission for page: 22 is 3
 Yalnix     Kernel data/heap permission for page: 23 is 3
 Yalnix     Kernel data/heap permission for page: 24 is 3
-Yalnix     Kernel text, data, and heap initialized with 9 total entries
+Yalnix     Kernel data/heap permission for page: 25 is 3
+Yalnix     Kernel text, data, and heap initialized with 10 total entries
 Yalnix     Kernel stack initialized with 2 total entries
-Hardware       | WriteRegister(REG_PTBR0,0x028de0)
+Hardware       | WriteRegister(REG_PTBR0,0x02a1a0)
 Hardware       | WriteRegister(REG_PTLR0,0x000080)
-Yalnix     ENTER create_idle_process.
-Yalnix     ENTER create_pcb.
-Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 9 blocks allocated, 5016 bytes total
-Yalnix     ENTER list_init.
-Yalnix     EXIT list_init.
-Yalnix     EXIT create_pcb.
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 0
-Hardware       | WriteRegister(REG_PTBR1,0x02b204)
-Hardware       | WriteRegister(REG_PTLR1,0x000080)
-Yalnix     Wrote region 1 page table base register to 0x2b204
-Yalnix     Wrote region 1 page table limit register to 1
-Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 10 blocks allocated, 5028 bytes total
-Yalnix     EXIT create_idle_process. Created idle process with PID 0
 Hardware       | WriteRegister(REG_VM_ENABLE,0x000001)
 Hardware   Enabling VM
 Hardware   _first_kernel_text_page 16
-Hardware   _first_kernel_data_page 19
-Hardware   _orig_kernel_brk_page 25
+Hardware   _first_kernel_data_page 20
+Hardware   _orig_kernel_brk_page 26
 Hardware   initializing TLB to be empty
-Hardware   PhysLimit 32000, my_break 32000
+Hardware   PhysLimit 34000, my_break 34000
 Hardware   clearing TLB
-Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x2b204, PTLR1 0x80
-Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x28de0, PTLR0 0x80
+Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x0, PTLR1 0x0
+Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2a1a0, PTLR0 0x80
 Hardware   moving kernel text,data,heap into TLB
 Hardware   PageInTLB[16] addr 0x20000: 0 -> 1
 Hardware   PageInTLB[17] addr 0x22000: 0 -> 1
@@ -67,54 +77,286 @@ Hardware   PageInTLB[21] addr 0x2a000: 0 -> 1
 Hardware   PageInTLB[22] addr 0x2c000: 0 -> 1
 Hardware   PageInTLB[23] addr 0x2e000: 0 -> 1
 Hardware   PageInTLB[24] addr 0x30000: 0 -> 1
+Hardware   PageInTLB[25] addr 0x32000: 0 -> 1
 Hardware   moving kernel stack into TLB
 Yalnix     Virtual memory enabled
+Yalnix     ENTER create_process.
+Yalnix     ENTER create_pcb.
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 13 blocks allocated, 4716 bytes total
+Yalnix     ENTER list_init.
+Yalnix     EXIT list_init.
+Yalnix     EXIT create_pcb.
+Yalnix     Enter allocate_frame()
+Yalnix     allocate_frame: Allocated frame 0
+Hardware       | WriteRegister(REG_PTBR1,0x02d138)
+Hardware       | WriteRegister(REG_PTLR1,0x000080)
+Yalnix     Wrote region 1 page table base register to 0x2d138
+Yalnix     Wrote region 1 page table limit register to 1
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 14 blocks allocated, 4728 bytes total
+Yalnix     EXIT create_process. Created idle process with PID 0
 Yalnix     Leaving KernelStart, returning to idle process (PID 0)
 Hardware   ----
 Hardware   | Back from KernelStart
 Hardware   | HELPER setting Proc 0 kstack to 126 127
-Hardware   | Off to usermode SP [region 1] 0x1ffffc | PC [region 0] 0x214d9
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Hardware   | Off to usermode SP [region 1] 0x1ffffc | PC [region 0] 0x21ddf
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
 Hardware   ----
+Yalnix     Idle process running
 Hardware   ========= Hardware receives signal ==============
 Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 1
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f13549
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22e18 for trap TRAP_CLOCK
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
 Hardware   ----
-Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22e18 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f13549
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Yalnix     Clock trap occurred
 Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
 Hardware   ========= Hardware receives signal ==============
 Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 2
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f13549
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22e18 for trap TRAP_CLOCK
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
 Hardware   ----
-Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22e18 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f13549
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Yalnix     Clock trap occurred
 Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
 Hardware   ========= Hardware receives signal ==============
 Hardware   FrameworkSignalHandler(14), depth 1
 Hardware   clock tick 3
 Hardware   ----
 Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f13549
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x22e18 for trap TRAP_CLOCK
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
 Hardware   ----
-Yalnix     An unimplemented trap has occuredHardware   ----
-Hardware   | Back from Yalnix handler 0x22e18 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f13549
-Hardware   | pid 0 | PTBR1 0x02b204 | kstack 126 127
+Yalnix     Clock trap occurred
 Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 4
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 5
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 6
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 7
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 8
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 9
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 10
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 11
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 12
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 13
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 14
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 15
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running
+Hardware   ========= Hardware receives signal ==============
+Hardware   FrameworkSignalHandler(14), depth 1
+Hardware   clock tick 16
+Hardware   ----
+Hardware   | Trap Alarm clock
+Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   | Calling Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   ----
+Yalnix     Clock trap occurred
+Hardware   ----
+Hardware   | Back from Yalnix handler 0x237f1 for trap TRAP_CLOCK
+Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7fc4549
+Hardware   | pid 0 | PTBR1 0x02d138 | kstack 126 127
+Hardware   ----
+Yalnix     Idle process running

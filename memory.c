@@ -178,11 +178,6 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
     }
     TracePrintf(0, "Kernel text, data, and heap initialized with %d total entries\n", kernel_brk_start - kernel_text_start);
 
-    // Set the kernel break (heap top) using SetKernelBrk.
-    // void *kernel_brk = (void *)(UP_TO_PAGE(kernel_brk_start * PAGESIZE) * PAGESIZE);
-    // if (SetKernelBrk(kernel_brk) != 0) {
-    //     TracePrintf(0, "ERROR: Failed to set kernel break to address %p\n", kernel_brk);
-    // }
 
     // Initialize mappings for the kernel stack in the Region 0 page table.
     int base_kernelStack_vpn_index = KERNEL_STACK_BASE >> PAGESHIFT;

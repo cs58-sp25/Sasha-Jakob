@@ -31,7 +31,7 @@ void kernel_handler(UserContext* cont){
 }
 
 void clock_handler(UserContext* cont){
-    other();
+    TracePrintf(1, "Clock trap occurred\n");
     // TracePrintf(1, "There has been a clock trap");
     // // Loops through all delayed processes, decrements their time, and puts them in the ready queue if they're done delaying
     // update_delayed_processes();
