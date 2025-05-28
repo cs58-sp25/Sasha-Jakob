@@ -7,6 +7,8 @@
 // Might have to change to starting this in kernel.c and setting sync counter to 0
 extern sync_obj_t *sync_table[MAX_SYNCS];  // Storing all sync objects (pipes, locks, cvars)
 
+int global_sync_counter = 0;
+
 int InitSyncObject(sync_type_t type, void *object){
     // allocate a new sync object
         // if it fails return an error

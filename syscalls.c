@@ -1,7 +1,9 @@
 #include <yalnix.h>
 #include <yuser.h>
+
 #include "load_program.h"
 #include "syscalls.h"
+#include "context_switch.h"
 
 syscall_handler_t syscall_handlers[256]; // Array of trap handlers
 
@@ -209,14 +211,14 @@ void SysDelay(UserContext *uctxt){
     
     // Look at the ready queue to see if another exists, currently this should just be the idle process
     // Eventually idle should be stored separately maybe and returned if no ready processes exist.
-    pcb_t *next = peek(ready_queue);
+    pcb_t *next = pcb_from_queue_node(peek(ready_queue));
     if(next != NULL){
         // Set return to 0 for when the process is done delaying
         uctxt->regs[0] = 0;
         // Set the current process's UC to the given user context
         curr->user_context = uctxt;
-        // Set tHE current process's status to the default
-        curr->status = PROCESS_DEFAULT;
+        // Set the current process's status to the default
+        curr->state = PROCESS_DEFAULT;
         // Add the process to the delay queue
         add_to_delay_queue(curr, delay);
 
@@ -349,9 +351,13 @@ void SysReclaim(UserContext *uctxt){
 pcb_t *schedule(){
     pcb_t *curr = current_process;
     pcb_t *next = pop(ready_queue);
-    KernelContext kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
+    int kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
+    if(kc == ERROR){
+        TracePrintf(1, "There was an issue during switching.\n");
+        return NULL;
+    }
     //current_process should already be put into a different queue at this point
-    next->status = PROCESS_RUNNING;
+    next->state = PROCESS_RUNNING;
     next->run_time = 0;
     current_process = next;
     return next;

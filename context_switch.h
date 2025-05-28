@@ -147,4 +147,6 @@ void *setup_temp_mapping(int frame);
  */
 void remove_temp_mapping(void *addr);
 
+
+int map_kernel_stack(int *kernel_stack_frames);
 #endif /* _CONTEXT_SWITCH_H_ */

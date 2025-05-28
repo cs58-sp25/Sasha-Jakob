@@ -38,7 +38,7 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
 
     // Return a pointer to the KernelContext in the new PCB [cite: 457]
-    return &next_proc->kernel_context;
+    return next_proc->kernel_context;
 }
 
 
@@ -82,7 +82,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) 
     // Return the new process's kernel context for the switch.
     // Since KCCopy is called via KernelContextSwitch, returning this will cause the hardware
     // to load this kernel context.
-    return &new_proc->kernel_context;
+    return new_proc->kernel_context;
 }
 
 
@@ -99,7 +99,7 @@ void *setup_temp_mapping(int pfn) {
     // 3. Flush the TLB entry for TEMP_MAPPING_VADDR to ensure the new mapping is visible.
 
     // Placeholder: Assuming map_page can handle this
-    map_page(region0_pt, VPN_FROM_ADDR(TEMP_MAPPING_VADDR), pfn, PROT_READ | PROT_WRITE);
+    map_page(region0_pt, DOWN_TO_PAGE(TEMP_MAPPING_VADDR), pfn, PROT_READ | PROT_WRITE);
     WriteRegister(REG_TLB_FLUSH, (unsigned long)TEMP_MAPPING_VADDR); // Flush specific TLB entry
 
     return TEMP_MAPPING_VADDR;
@@ -117,7 +117,7 @@ void remove_temp_mapping(void *addr) {
 
     // Placeholder: Assuming unmap_page is available
     // unmap_page(region0_pt, VPN_FROM_ADDR(addr)); // You would need to implement unmap_page if not available
-    pte_t *entry = region0_pt + VPN_FROM_ADDR(addr);
+    pte_t *entry = region0_pt + DOWN_TO_PAGE(addr);
     entry->valid = 0; // Invalidate the PTE
     WriteRegister(REG_TLB_FLUSH, (unsigned long)addr); // Flush specific TLB entry
 }
@@ -143,7 +143,7 @@ int map_kernel_stack(int *kernel_stack_frames) {
         // Map each physical frame of the new kernel stack to its corresponding
         // virtual page in Region 0.
         // Permissions: PROT_READ | PROT_WRITE for kernel stack.
-        map_page(region0_pt, VPN_FROM_ADDR(kernel_stack_vaddr_start + i * PAGESIZE),
+        map_page(region0_pt, DOWN_TO_PAGE(kernel_stack_vaddr_start + i * PAGESIZE),
                  kernel_stack_frames[i], PROT_READ | PROT_WRITE);
     }
     // A full TLB flush (TLB_FLUSH_ALL) typically happens in KCSwitch itself after all mappings are done.
