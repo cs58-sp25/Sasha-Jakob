@@ -1,7 +1,11 @@
+#include <yalnix.h>
+#include <yuser.h>
+#include <ykernel.h>
+
 #include "sync.h"
+
 // Might have to change to starting this in kernel.c and setting sync counter to 0
-extern sync_obj_t *sync_table[MAX_SYNC];  // Storing all sync objects (pipes, locks, cvars)
-extern int global_sync_counter = 0;
+extern sync_obj_t *sync_table[MAX_SYNCS];  // Storing all sync objects (pipes, locks, cvars)
 
 int InitSyncObject(sync_type_t type, void *object){
     // allocate a new sync object
@@ -30,8 +34,8 @@ int SyncInitPipe(int *pipe_idp){
     new_pipe->read_pos = 0;
     new_pipe->write_pos = 0;
     new_pipe->bytes_in_buffer = 0;
-    list_init(new_pipe->readers);
-    list_init(new_pipe->writers);
+    list_init(&new_pipe->readers);
+    list_init(&new_pipe->writers);
     new_pipe->open_for_read = true;
     new_pipe->open_for_write = true;
     // Init the sync object with InitSyncObject
@@ -40,7 +44,7 @@ int SyncInitPipe(int *pipe_idp){
         TracePrintf(1, "ERROR, there was an issue with allocating the synchonization object.\n");
     }
     // Return the return of InitSyncObject and set the idp value to the returned id
-    &pipe_idp = rc;
+    *pipe_idp = rc;
     TracePrintf(1, "Exit SyncInitPipe.\n");
     return SUCCESS;
 }
@@ -120,7 +124,7 @@ int SyncInitLock(int *lock_idp){
     }
     new_lock->locked = false;
     new_lock->owner = NULL;
-    list_init(new_lock->waiters);
+    list_init(&new_lock->waiters);
     // Init the sync object with InitSyncObject
     int rc = InitSyncObject(LOCK, (void *)new_lock);
     if(rc == ERROR){
@@ -128,7 +132,7 @@ int SyncInitLock(int *lock_idp){
         return ERROR;
     }
     // Return the return of InitSyncObject and set the idp value to the returned id
-    &lock_idp = rc;
+    *lock_idp = rc;
     TracePrintf(1, "Exit SyncInitLock.\n");
     return SUCCESS;
 }
@@ -179,7 +183,7 @@ int SyncInitCvar(int *lock_idp){
     if(new_cvar = NULL){
         TracePrintf(1, "ERROR, the new cvar could not be allocated.\n");
     }
-    list_init(new_cvar->waiters);
+    list_init(&new_cvar->waiters);
     // Init the sync object with InitSyncObject
     int rc = InitSyncObject(CVAR, (void *)new_cvar);
     if(rc == ERROR){
@@ -187,7 +191,7 @@ int SyncInitCvar(int *lock_idp){
         return ERROR;
     }
     // Return the return of InitSyncObject and set the idp value to the returned id
-    &lock_idp = rc;
+    *lock_idp = rc;
     TracePrintf(1, "Exit SyncInitCvar.\n");
     return SUCCESS;
 

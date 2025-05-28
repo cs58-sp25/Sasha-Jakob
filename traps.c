@@ -7,8 +7,6 @@
 
 trap_handler_t trap_handlers[TRAP_VECTOR_SIZE];
 
-static void other(void); // Placeholder function for unimplemented traps
-
 void trap_init(void) {
     // Each entry contains the address of the function to handle that specific trap
     trap_handlers[TRAP_KERNEL] = kernel_handler;        // System calls from user processes

@@ -5,7 +5,12 @@
 #include "memory.h"
 
 // Declare the array of syscall handler function pointers
-extern void (*syscall_handlers[20])(UserContext *);
+typedef void (*syscall_handler_t)(UserContext *uctxt);
+
+extern syscall_handler_t syscall_handlers[256]; // Array of trap handlers
+void syscalls_init(void);
+
+void SysUnimplemented(UserContext *uctxt);
 void SysFork(UserContext *uctxt);
 void SysExec(UserContext *uctxt);
 void SysExit(UserContext *uctxt);

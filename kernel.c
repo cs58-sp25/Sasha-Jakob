@@ -52,7 +52,8 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     // Set the idle process pcb values
     idle_process->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
     idle_process->user_context->pc = &DoIdle; // Set the program counter to the idle function
-
+    
+    global_sync_counter = 0;
     current_process = idle_process; // Set the global 'current_process' to the newly created idle process
     uctxt->pc = &DoIdle; // Set the PC to the idle function
     uctxt->sp = (void *)(VMEM_1_LIMIT -4); // Set the stack pointer to the top of the kernel stack

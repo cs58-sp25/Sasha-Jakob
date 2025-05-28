@@ -9,6 +9,7 @@ typedef void (*trap_handler_t)(UserContext *uctxt);
 
 extern trap_handler_t trap_handlers[TRAP_VECTOR_SIZE]; // Array of trap handlers
 
+static void other(void); // Placeholder function for unimplemented traps
 void trap_init(void); // Initialize the trap handlers
 
 // Trap handler for system calls (TRAP_KERNEL)

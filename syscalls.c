@@ -1,36 +1,41 @@
+#include <yalnix.h>
+#include <yuser.h>
+#include "load_program.h"
 #include "syscalls.h"
 
+syscall_handler_t syscall_handlers[256]; // Array of trap handlers
+
 // Syscall handler table
-void (*syscall_handlers[256])(UserContext *) = {
+void syscalls_init(void){
 
     // And the syscall code with the mask to get just the code, idk why this was set up this way in yuser.h
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
-    [YALNIX_FORK & YALNIX_MASK] = (int)SysUnimplemented, //SysFork,
-    [YALNIX_EXEC & YALNIX_MASK] = (int)SysUnimplemented, //SysExec,
-    [YALNIX_EXIT & YALNIX_MASK] = (int)SysUnimplemented, //SysExit,
-    [YALNIX_WAIT & YALNIX_MASK] = (int)SysUnimplemented, //SysWait,
-    [YALNIX_GETPID & YALNIX_MASK] = (int)SysGetPid,
-    [YALNIX_BRK & YALNIX_MASK] = (int)SysBrk,
-    [YALNIX_DELAY & YALNIX_MASK] = (int)SysDelay,
-    [YALNIX_TTY_READ & YALNIX_MASK] = (int)SysUnimplemented, //SysTtyRead,
-    [YALNIX_TTY_WRITE & YALNIX_MASK] = (int)SysUnimplemented, //SysTtyWrite,
-    [YALNIX_PIPE_INIT & YALNIX_MASK] = (int)SysUnimplemented, // SysPipeInit,
-    [YALNIX_PIPE_READ & YALNIX_MASK] = (int)SysUnimplemented, //SysPipeRead,
-    [YALNIX_PIPE_WRITE & YALNIX_MASK] = (int)SysUnimplemented, //SysPipeWrite,
-    [YALNIX_LOCK_INIT & YALNIX_MASK] = (int)SysUnimplemented, //SysLockInit,
-    [YALNIX_LOCK_ACQUIRE & YALNIX_MASK] = (int)SysUnimplemented, //SysAcquire,
-    [YALNIX_LOCK_RELEASE & YALNIX_MASK] = (int)SysUnimplemented, //SysRelease,
-    [YALNIX_CVAR_INIT & YALNIX_MASK] = (int)SysUnimplemented, //SysCvarInit,
-    [YALNIX_CVAR_SIGNAL & YALNIX_MASK] = (int)SysUnimplemented, //SysCvarSignal,
-    [YALNIX_CVAR_BROADCAST & YALNIX_MASK] = (int)SysUnimplemented, //SysCvarBroadcast,
-    [YALNIX_CVAR_WAIT & YALNIX_MASK] = (int)SysUnimplemented, //SysCvarWait,
-    [YALNIX_RECLAIM & YALNIX_MASK] = (int)SysUnimplemented, //SysReclaim,
+    syscall_handlers[YALNIX_FORK & YALNIX_MASK] = SysUnimplemented; //SysFork,
+    syscall_handlers[YALNIX_EXEC & YALNIX_MASK] = SysExec;
+    syscall_handlers[YALNIX_EXIT & YALNIX_MASK] = SysUnimplemented; //SysExit,
+    syscall_handlers[YALNIX_WAIT & YALNIX_MASK] = SysWait;
+    syscall_handlers[YALNIX_GETPID & YALNIX_MASK] = SysGetPID;
+    syscall_handlers[YALNIX_BRK & YALNIX_MASK] = SysBrk;
+    syscall_handlers[YALNIX_DELAY & YALNIX_MASK] = SysDelay;
+    syscall_handlers[YALNIX_TTY_READ & YALNIX_MASK] = SysUnimplemented; //SysTtyRead,
+    syscall_handlers[YALNIX_TTY_WRITE & YALNIX_MASK] = SysUnimplemented; //SysTtyWrite,
+    syscall_handlers[YALNIX_PIPE_INIT & YALNIX_MASK] = SysUnimplemented; // SysPipeInit,
+    syscall_handlers[YALNIX_PIPE_READ & YALNIX_MASK] = SysUnimplemented; //SysPipeRead,
+    syscall_handlers[YALNIX_PIPE_WRITE & YALNIX_MASK] = SysUnimplemented; //SysPipeWrite,
+    syscall_handlers[YALNIX_LOCK_INIT & YALNIX_MASK] = SysUnimplemented; //SysLockInit,
+    syscall_handlers[YALNIX_LOCK_ACQUIRE & YALNIX_MASK] = SysUnimplemented; //SysAcquire,
+    syscall_handlers[YALNIX_LOCK_RELEASE & YALNIX_MASK] = SysUnimplemented; //SysRelease,
+    syscall_handlers[YALNIX_CVAR_INIT & YALNIX_MASK] = SysUnimplemented; //SysCvarInit,
+    syscall_handlers[YALNIX_CVAR_SIGNAL & YALNIX_MASK] = SysUnimplemented; //SysCvarSignal,
+    syscall_handlers[YALNIX_CVAR_BROADCAST & YALNIX_MASK] = SysUnimplemented; //SysCvarBroadcast,
+    syscall_handlers[YALNIX_CVAR_WAIT & YALNIX_MASK] = SysUnimplemented; //SysCvarWait,
+    syscall_handlers[YALNIX_RECLAIM & YALNIX_MASK] = SysUnimplemented; //SysReclaim,
     // Add other syscall handlers here
-};
+}
 
 void SysUnimplemented(UserContext *uctxt){
-    TracePrintf(1, "The syscall %d has not yet been implemented.\n", uctxt->code & YALNIX_MASK)
-    uctxt->regs[0] = error
+    TracePrintf(1, "The syscall %d has not yet been implemented.\n", uctxt->code & YALNIX_MASK);
+    uctxt->regs[0] = ERROR;
 
 }
 
@@ -52,21 +57,21 @@ void SysFork(UserContext *uctxt) {
 }
 
 void SysExec(UserContext *uctxt) {
-    TracePrintf(1, "Enter SysExec.\n")
+    TracePrintf(1, "Enter SysExec.\n");
     // Get the filename and args from user space
     char *filename = (char*) uctxt->regs[0];
     char **argvec = (char**) uctxt->regs[1];
     // Load the program, then context switch
     int rc = LoadProgram(filename, argvec, current_process);
     if(rc == ERROR) {
-        Traceprintf(1, "ERROR, Loading the program has failed.\n");
+        TracePrintf(1, "ERROR, Loading the program has failed.\n");
         // Probably need to write code here to make it so a new process is loaded made to run
     }
     current_process->state = PROCESS_DEFAULT;
     add_to_ready_queue(current_process);
     pcb_t *next = schedule();
     uctxt = next->user_context;
-    TracePrintf(1, "Exit SysExec.\n")
+    TracePrintf(1, "Exit SysExec.\n");
 }
 
 void SysExit(UserContext *uctxt) {
@@ -80,20 +85,20 @@ void SysExit(UserContext *uctxt) {
 }
 
 void SysWait(UserContext *uctxt) {
-    traceprintf(1, "Enter SysWait.\n");
+    TracePrintf(1, "Enter SysWait.\n");
     // Check to see if the process has any children
         // If not return an error
-    if(list_is_empty(current_process->children)){
+    if(list_is_empty(&current_process->children)){
         uctxt->regs[0] = ERROR;
-        traceprintf(1, "ERROR, the process has no children to wait for.\n");
-        reutrn;
+        TracePrintf(1, "ERROR, the process has no children to wait for.\n");
+        return;
     }
 
     // Get the status pointer
-    int *status_ptr = (int *)regs[0];
+    int *status_ptr = (int *) uctxt->regs[0];
     // Check to see if the process has any children currently waiting, if there are
         // grab the child's PID and exit status
-    pcb_t *z_child = find_zombie_children(current_process);
+    pcb_t *z_child = find_zombie_child(current_process);
     // If no children are waiting 
         // add the parent to the waiting queue
         // set it's waiting_child to true
@@ -110,8 +115,8 @@ void SysWait(UserContext *uctxt) {
     // Remove the child from the list of children
     else {
         remove_from_zombie_queue(z_child);
-        if(status_ptr != NULL) &status_ptr = z_child->exit_status;
-        UserContext->regs[0] = z_child->pid;
+        if(status_ptr != NULL) *status_ptr = z_child->exit_code;
+        uctxt->regs[0] = z_child->pid;
         free(z_child); // Need to go back and make sure terminate_process clears all other parts of memory as well. Maybe need to write a special function
     }
     // else return the the child's PID
@@ -130,16 +135,16 @@ void SysGetPID(UserContext *uctxt){
 
 void SysBrk(UserContext *uctxt){
     // Get the addr from the user context
-    unsigned int addr = ((unsigned int)) uctxt->regs[0];
+    unsigned int addr = (unsigned int) uctxt->regs[0];
     TracePrintf(1, "ENTER SysBrk. addr is %08x.\n", (unsigned int) addr);
-    pcb* curr = current_process;
+    pcb_t* curr = current_process;
     unsigned int nbrk = UP_TO_PAGE(addr)>>PAGESHIFT;
-    unsigned int cbrk = curr->brk>>PAGESHIFT;
+    unsigned int cbrk = (unsigned int) curr->brk>>PAGESHIFT;
     // Check to see if the address is a valid spot for the break (not above the stack or below the base of the heap)
         // If not return an error
-    if  nbrk >= (DOWN_TO_PAGE(current_process->usercontext.sp)>>PAGESHIFT){
+    if  (nbrk >= DOWN_TO_PAGE(current_process->user_context->sp)>>PAGESHIFT){
         TracePrintf(1, "ERROR, new brk is above current stack pointer.\n");
-        uctxt->regs[0] = error;
+        uctxt->regs[0] = ERROR;
         return;
     }
     // Check to see if the new brk actually has any effect on the pages (i.e. addr is in the current page below brk)
@@ -151,17 +156,17 @@ void SysBrk(UserContext *uctxt){
     // If brk is above the old break, allocate new pages
     if (nbrk > cbrk){
         TracePrintf(1, "brk is being moved from %08x up to %08x.\n", curr->brk, UP_TO_PAGE(addr));
-        for(unsigned int i = cbrk; i < nbrk, i++){
-            if(curr_process->region1_pt[i].valid == 0){
-                int nf = allocateFreeFrame();
-                if(nf == error){
+        for(unsigned int i = cbrk; i < nbrk; i++){
+            if(current_process->region1_pt[i].valid == 0){
+                int nf = allocate_frame();
+                if(nf == ERROR){
                     TracePrintf(1, "ERROR, no new frames to allocate for SysBrk.\n");
-                    uctxt->regs[0] = error;
+                    uctxt->regs[0] = ERROR;
                     return;
                 }
-                curr_process->pagetable1[i].valid = 1;
-                curr_process->pagetable1[i].prot = PROT_READ | PROT_WRITE;
-                curr_process->pagetable1[i].pfn = nf;
+                current_process->region1_pt[i].valid = 1;
+                current_process->region1_pt[i].prot = PROT_READ | PROT_WRITE;
+                current_process->region1_pt[i].pfn = nf;
             }
         }
         TracePrintf(1, "brk has been moved from %08x up to %08x.\n", curr->brk, UP_TO_PAGE(addr));
@@ -169,14 +174,14 @@ void SysBrk(UserContext *uctxt){
     // if brk is below the old break
     else{
         TracePrintf(1, "brk has is being moved from %08x down to %08x.\n", curr->brk, UP_TO_PAGE(addr));
-        for(unsigned int i = cbrk - 1; i < nbrk, i--){
-            if(curr_process->region1_pt[i].valid == 1){
-                fn = curr_process->pagetable1[i].pfn;
+        for(unsigned int i = cbrk - 1; i < nbrk; i--){
+            if(current_process->region1_pt[i].valid == 1){
+                int fn = current_process->region1_pt[i].pfn;
                 free_frame(fn);
                 WriteRegister(REG_TLB_FLUSH, i << PAGESHIFT);
-                curr_process->pagetable1[i].valid = 0;
-                curr_process->pagetable1[i].prot = 0;
-                curr_process->pagetable1[i].pfn = 0;
+                current_process->region1_pt[i].valid = 0;
+                current_process->region1_pt[i].prot = 0;
+                current_process->region1_pt[i].pfn = 0;
             }
         }
         TracePrintf(1, "brk has been moved from %08x down to %08x.\n", curr->brk, UP_TO_PAGE(addr));
@@ -190,13 +195,13 @@ void SysDelay(UserContext *uctxt){
     // Get the delay from the context, check if the delay is invalid or 0
     int delay = (int) uctxt->regs[0];
     if(delay < 0) {
-        TracePrintf(1, "ERROR, delay was negative %d\n", curr->pid, delay);
-        uctxt->regs[0] = error
+        TracePrintf(1, "ERROR, delay was negative %d\n", current_process->pid, delay);
+        uctxt->regs[0] = ERROR;
         return;
     }
     if(delay == 0) {
-        TracePrintf(1, "EXIT SysDelay, delay was 0\n", curr->pid, delay);
-        uctxt->regs[0] = 0
+        TracePrintf(1, "EXIT SysDelay, delay was 0\n", current_process->pid, delay);
+        uctxt->regs[0] = 0;
         return;
     }
     // Set the pcb's delaying status to true
@@ -204,7 +209,7 @@ void SysDelay(UserContext *uctxt){
     
     // Look at the ready queue to see if another exists, currently this should just be the idle process
     // Eventually idle should be stored separately maybe and returned if no ready processes exist.
-    pcb_t *next == peek(ready_queue);
+    pcb_t *next = peek(ready_queue);
     if(next != NULL){
         // Set return to 0 for when the process is done delaying
         uctxt->regs[0] = 0;
