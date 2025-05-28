@@ -36,18 +36,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt);
 pcb_t *create_process(UserContext *uctxt);
 
 
-/**
- * @brief Creates and initializes the Process Control Block (PCB) for the idle process.
- *
- * This function sets up the idle process's PCB, including its Region 1 page table
- * (initially mapping only the user stack), its kernel stack frames, and its UserContext
- * to start executing the DoIdle function.
- *
- * @param uctxt A pointer to the initial UserContext provided by KernelStart.
- * This context is copied and then modified for the idle process.
- * @return A pointer to the newly created idle process's PCB on success, or NULL on failure.
- */
-pcb_t *create_idle_process(UserContext *uctxt);
+int load_program(char *name, char *args[], pcb_t *proc);
 
 
 /**

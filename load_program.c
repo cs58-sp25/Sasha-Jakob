@@ -17,6 +17,7 @@
 
 #include "memory.h"
 #include "pcb.h"
+#include "load_program.h"
 
 /*
  * ==>> #include anything you need for your kernel here

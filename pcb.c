@@ -393,16 +393,16 @@ void remove_child(pcb_t *child) {
 
 void orphan_children(pcb_t *parent) {
     TracePrintf(1, "ENTER orphan_children.\n");
-    if (process == NULL) {
+    if (current_process == NULL) {
         TracePrintf(1, "Error: Attempting to orphan children of a NULL PCB.\n");
         return;
     }
-    if(list_is_empty(&process->children)) {
+    if(list_is_empty(&current_process->children)) {
         TracePrintf(1, "EXIT orphan_children the process has no children.\n");
         return;
     }
 
-    if ()
+    // Iterate through parent's children list and set each child's parent to NULL
     while (!list_is_empty(&parent->children)) {
         pcb_t *child = pcb_from_children_node(pop(&parent->children));
         if (child->state == PROCESS_ZOMBIE) free(child);
