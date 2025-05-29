@@ -134,9 +134,7 @@ pcb_t *create_process(UserContext *uctxt){
     // Allocate a NEW physical frame for the idle process's Region 1 page table.
     int pfn = allocate_frame();
     int stack_index = MAX_PT_LEN - 1;
-    new_pcb->region1_pt[stack_index].valid = 1;
-    new_pcb->region1_pt[stack_index].prot = PROT_READ | PROT_WRITE; // User stack needs read/write permissions
-    new_pcb->region1_pt[stack_index].pfn = pfn; // Map to the allocated physical frame
+    map_page(new_pcb->region1_pt, stack_index, pfn, PROT_READ | PROT_WRITE); // Map the physical frame to the last entry in Region 1 page table
     
     // Assign important values to the new process PCB
     int pid = helper_new_pid(new_pcb->region1_pt);
