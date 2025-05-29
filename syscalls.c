@@ -357,8 +357,15 @@ void SysReclaim(UserContext *uctxt){
 }
 
 pcb_t *schedule(){
+    TracePrintf(1, "Enter schedule.\n");
     pcb_t *curr = current_process;
-    pcb_t *next = pcb_from_queue_node(pop(ready_queue));
+    list_node_t *node_next = pop(ready_queue);
+    if(node_next == NULL){
+        TracePrintf(1, "There is no other pcb to queue.\n");
+        return NULL;
+
+    }
+    pcb_t *next = pcb_from_queue_node(node_next);
     int kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
     if(kc == ERROR){
         TracePrintf(1, "There was an issue during switching.\n");
@@ -368,5 +375,6 @@ pcb_t *schedule(){
     next->state = PROCESS_RUNNING;
     next->run_time = 0;
     current_process = next;
+    TracePrintf(1, "Exit schedule.\n");
     return next;
 }
