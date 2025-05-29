@@ -83,7 +83,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
 //     pcb_t *temp_pcb = create_process(NULL); // Pass NULL as it's not a user context being saved directly here
 //     if (temp_pcb == NULL) {
-//         TracePrintf(0, "ERROR: Failed to create bootstrap PCB\n");
+//         TracePrintf(0, "ERROR: Failed to create temporary PCB\n");
 //         Halt();
 //     }
 
@@ -95,12 +95,15 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 //     char **init_program_args = NULL;
 
 //     if (cmd_args != NULL && cmd_args[0] != NULL) {
+//         // If arguments are provided, use the first one as the program name
 //         init_program_name = cmd_args[0];
-//         init_program_args = cmd_args;
-//         TracePrintf(0, "KernelStart: Initializing with program: %s\n", init_program_name);
+//         init_program_args = cmd_args; // Pass all arguments to init
+//         TracePrintf(0, "KernelStart: Initializing with program specified on command line: %s\n", init_program_name);
 //     } else {
-//         TracePrintf(0, "KernelStart: No init program specified in cmd_args. Halting.\n");
-//         Halt(); // As per handout, kernel should halt if init isn't specified
+//         // If no arguments are provided, load the default 'init' program
+//         init_program_name = "test/init"; // Set the default init program name
+//         init_program_args = NULL;   // The default init program will receive no arguments
+//         TracePrintf(0, "KernelStart: No init program specified on command line. Loading default init: %s\n", init_program_name);
 //     }
 
 //     // Create the 'init' process PCB
@@ -118,7 +121,11 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 //     }
 
 //     TracePrintf(0, "KernelStart: Performing initial context switch to init process (PID %d)\n", init_process->pid);
-//     return KCSwitch(temp_pcb->kernel_context, temp_pcb, init_process);
+//     KCSwitch(temp_pcb->kernel_context, temp_pcb, init_process);
+    
+//     TracePrintf(0, "ERROR: KCSwitch unexpectedly returned to KernelStart. Halting.\n");
+//     Halt();
+//     return;
 // }
 
 
@@ -176,7 +183,8 @@ int load_program(char *name, char *args[], pcb_t *proc) {
 
     if (args == NULL || name == NULL) {
         TracePrintf(0, "No arguments provided -> loading default init process.\n");
-        return ERROR; // Invalid arguments
+        int result = LoadProgram("test/init", NULL, proc);
+        return result; // Invalid arguments
     }
 
     int load_result = LoadProgram(args[0], args, proc);

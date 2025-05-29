@@ -15,8 +15,8 @@ Hardware   Kernel heap usage: 7 blocks allocated, 1916 bytes total
 Yalnix     KernelStart: text start = 0x10
 Yalnix     KernelStart: data start = 0x15
 Yalnix     KernelStart: brk start = 0x1b
-Hardware       | WriteRegister(REG_VECTOR_BASE,0x02c7a0)
-Yalnix     Interrupt vector table initialized at 0x0x2c7a0
+Hardware       | WriteRegister(REG_VECTOR_BASE,0x02ca20)
+Yalnix     Interrupt vector table initialized at 0x0x2ca20
 Yalnix     ENTER init_pcb_system.
 Yalnix     ENTER create_list.
 Hardware   Kernel heap OK.
@@ -46,7 +46,7 @@ Yalnix     EXIT init_pcb_system.
 Yalnix     Initializing page table...
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 12 blocks allocated, 4032 bytes total
-Yalnix     Region 0 page table base physical address: 0x2c580
+Yalnix     Region 0 page table base physical address: 0x2c800
 Yalnix     Kernel data/heap permission for page: 21 is 3
 Yalnix     Kernel data/heap permission for page: 22 is 3
 Yalnix     Kernel data/heap permission for page: 23 is 3
@@ -55,7 +55,7 @@ Yalnix     Kernel data/heap permission for page: 25 is 3
 Yalnix     Kernel data/heap permission for page: 26 is 3
 Yalnix     Kernel text, data, and heap initialized with 11 total entries
 Yalnix     Kernel stack initialized with 2 total entries
-Hardware       | WriteRegister(REG_PTBR0,0x02c580)
+Hardware       | WriteRegister(REG_PTBR0,0x02c800)
 Hardware       | WriteRegister(REG_PTLR0,0x000080)
 Hardware       | WriteRegister(REG_VM_ENABLE,0x000001)
 Hardware   Enabling VM
@@ -66,7 +66,7 @@ Hardware   initializing TLB to be empty
 Hardware   PhysLimit 36000, my_break 36000
 Hardware   clearing TLB
 Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x0, PTLR1 0x0
-Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2c580, PTLR0 0x80
+Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2c800, PTLR0 0x80
 Hardware   moving kernel text,data,heap into TLB
 Hardware   PageInTLB[16] addr 0x20000: 0 -> 1
 Hardware   PageInTLB[17] addr 0x22000: 0 -> 1
@@ -97,130 +97,26 @@ Yalnix     Wrote region 1 page table limit register to 1
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 14 blocks allocated, 4676 bytes total
 Yalnix     EXIT create_process. Created idle process with PID 0
-Yalnix     Leaving KernelStart, returning to idle process (PID 0)
-Hardware   ----
-Hardware   | Back from KernelStart
-Hardware   | HELPER setting Proc 0 kstack to 126 127
-Hardware   | Off to usermode SP [region 1] 0x1ffffc | PC [region 0] 0x215db
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   ----
-Yalnix     Idle process running
-Hardware   ========= Hardware receives signal ==============
-Hardware   FrameworkSignalHandler(14), depth 1
-Hardware   clock tick 1
-Hardware   ----
-Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   ----
-Yalnix     There has been a clock trapYalnix     ENTER update_delayed_processes.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     EXIT update_delayed_processes, no delaying processes.
-Hardware   ----
-Hardware   | Back from Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   ----
-Yalnix     Idle process running
-Hardware   ========= Hardware receives signal ==============
-Hardware   FrameworkSignalHandler(14), depth 1
-Hardware   clock tick 2
-Hardware   ----
-Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   ----
-Yalnix     There has been a clock trapYalnix     ENTER update_delayed_processes.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     EXIT update_delayed_processes, no delaying processes.
-Hardware   ----
-Hardware   | Back from Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   ----
-Yalnix     Idle process running
-Hardware   ========= Hardware receives signal ==============
-Hardware   FrameworkSignalHandler(14), depth 1
-Hardware   clock tick 3
-Hardware   ----
-Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   ----
-Yalnix     There has been a clock trapYalnix     ENTER update_delayed_processes.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     EXIT update_delayed_processes, no delaying processes.
-Hardware   ----
-Hardware   | Back from Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   ----
-Yalnix     Idle process running
-Hardware   ========= Hardware receives signal ==============
-Hardware   FrameworkSignalHandler(14), depth 1
-Hardware   clock tick 4
-Hardware   ----
-Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   ----
-Yalnix     There has been a clock trapYalnix     ENTER update_delayed_processes.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     EXIT update_delayed_processes, no delaying processes.
-Hardware   ----
-Hardware   | Back from Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   | Off to usermode SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   ----
-Yalnix     Idle process running
-Hardware   ========= Hardware receives signal ==============
-Hardware   FrameworkSignalHandler(14), depth 1
-Hardware   clock tick 5
-Hardware   ----
-Hardware   | Trap Alarm clock
-Hardware   | From usermode  SP [region 1] 0x1ffea0 | PC [vdso] 0xf7f98549
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   | Calling Yalnix handler 0x23070 for trap TRAP_CLOCK
-Hardware   ----
-Yalnix     There has been a clock trapYalnix     ENTER update_delayed_processes.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     EXIT update_delayed_processes, no delaying processes.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     ERROR, The list was empty or the list didn't exist (last trace would clarify).
-Yalnix     ENTER add_to_ready_queue.
-Yalnix     ENTER insert_tail.
-Yalnix     EXIT insert_tail.
-Yalnix     EXIT add_to_ready_queue.
-Yalnix     ENTER pop.
-Yalnix     ENTER list_is_empty.
-Yalnix     EXIT list_is_empty.
-Yalnix     EXIT pop.
-Hardware   ----
-Hardware   | On [kcs stack] invoking  MyKCS function 0x024d8f
-Hardware   | From kernelmode SP [region 0] 0xff840 | PC [libhardware.so] 0xf7f4dcfb
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   ----
-Yalnix     map_kernel_stack: Re-mapping kernel stack in Region 0.
-Hardware   ========= Hardware receives signal ==============
-Hardware   FrameworkSignalHandler(11), depth 2
-Hardware   ----
-Hardware   | Trap Segmentation fault
-Hardware   | From usermode  SP [kcs stack] 0xf7f64bd4 | PC [region 0] 0x21d45
-Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
-Hardware   The kernel has an unsresolved trap, depth = 2
-Hardware   | 
-
-
- BIG GREEN SCREEN O' DEATH!!!!!!
-
-
+Yalnix     KernelStart: Initializing with program specified on command line: yalnix
+Yalnix     ENTER create_process.
+Yalnix     ENTER create_pcb.
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 15 blocks allocated, 5308 bytes total
+Yalnix     ENTER list_init.
+Yalnix     EXIT list_init.
+Yalnix     EXIT create_pcb.
+Yalnix     Enter allocate_frame()
+Yalnix     allocate_frame: Allocated frame 1
+Hardware       | WriteRegister(REG_PTBR1,0x02f3b8)
+Hardware       | WriteRegister(REG_PTLR1,0x000080)
+Yalnix     Wrote region 1 page table base register to 0x2f3b8
+Yalnix     Wrote region 1 page table limit register to 1
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 16 blocks allocated, 5320 bytes total
+Yalnix     EXIT create_process. Created idle process with PID 1
+Yalnix     Enter LoadProgram.
+Yalnix     LoadProgram: 'yalnix' not linked for Yalnix
+Yalnix     ERROR: LoadProgram failed for 'yalnix' with error -1.
+Yalnix     ERROR: Failed to load init program 'yalnix'. Halting.
+Hardware   
+** Machine Halted **
