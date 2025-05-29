@@ -24,43 +24,6 @@
 
 
 /* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/
-void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
-
-    // Print debug information about memory layout
-    TracePrintf(0, "KernelStart: text start = 0x%x\n", _first_kernel_text_page);
-    TracePrintf(0, "KernelStart: data start = 0x%x\n", _first_kernel_data_page);
-    TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
-
-    trap_init(); // Initialize the interrupt vector table
-
-    // Initialize the PCB system
-    if (init_pcb_system() != 0) {
-        TracePrintf(0, "ERROR: Failed to initialize PCB system\n");
-        Halt(); // System cannot function without a PCB system; halt.
-    }
-
-    // Initialize page tables for Region 0 and initial kernel break
-    init_region0_pageTable((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
-
-    enable_virtual_memory(); // Enable virtual memory
-
-    // Create the idle process
-    pcb_t *idle_process = create_process(uctxt); // The uctxt parameter here is the initial UserContext provided by the hardware
-    
-    load_program(cmd_args[0], cmd_args, idle_process); // Load the initial program into the idle process
-
-    // Set the idle process pcb values
-    idle_process->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
-    idle_process->user_context->pc = &DoIdle; // Set the program counter to the idle function
-    
-    current_process = idle_process; // Set the global 'current_process' to the newly created idle process
-    uctxt->pc = &DoIdle; // Set the PC to the idle function
-    uctxt->sp = (void *)(VMEM_1_LIMIT -4); // Set the stack pointer to the top of the kernel stack
-
-    TracePrintf(0, "Leaving KernelStart, returning to idle process (PID %d)\n", idle_process->pid);
-    return; // Return to user mode, entering the idle loop
-}
-
 // void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
 //     // Print debug information about memory layout
@@ -81,52 +44,77 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
 //     enable_virtual_memory(); // Enable virtual memory
 
-//     pcb_t *temp_pcb = create_process(NULL); // Pass NULL as it's not a user context being saved directly here
-//     if (temp_pcb == NULL) {
-//         TracePrintf(0, "ERROR: Failed to create temporary PCB\n");
-//         Halt();
-//     }
-
-//     // Update the global current_process to this bootstrap PCB
-//     current_process = temp_pcb;
-
-//     // Determine the init program name and arguments from cmd_args
-//     char *init_program_name = NULL;
-//     char **init_program_args = NULL;
-
-//     if (cmd_args != NULL && cmd_args[0] != NULL) {
-//         // If arguments are provided, use the first one as the program name
-//         init_program_name = cmd_args[0];
-//         init_program_args = cmd_args; // Pass all arguments to init
-//         TracePrintf(0, "KernelStart: Initializing with program specified on command line: %s\n", init_program_name);
-//     } else {
-//         // If no arguments are provided, load the default 'init' program
-//         init_program_name = "test/init"; // Set the default init program name
-//         init_program_args = NULL;   // The default init program will receive no arguments
-//         TracePrintf(0, "KernelStart: No init program specified on command line. Loading default init: %s\n", init_program_name);
-//     }
-
-//     // Create the 'init' process PCB
-//     pcb_t *init_process = create_process(NULL); // create_process will set up its own user_context
-//     if (init_process == NULL) {
-//         TracePrintf(0, "ERROR: Failed to create init process PCB\n");
-//         Halt();
-//     }
-
-//     // Load the 'init' program into the new 'init_process'
-//     int load_result = load_program(init_program_name, init_program_args, init_process);
-//     if (load_result != 0) { // Assuming load_program returns 0 on success
-//         TracePrintf(0, "ERROR: Failed to load init program '%s'. Halting.\n", init_program_name);
-//         Halt();
-//     }
-
-//     TracePrintf(0, "KernelStart: Performing initial context switch to init process (PID %d)\n", init_process->pid);
-//     KCSwitch(temp_pcb->kernel_context, temp_pcb, init_process);
+//     // Create the idle process
+//     pcb_t *idle_process = create_process(uctxt); // The uctxt parameter here is the initial UserContext provided by the hardware
     
-//     TracePrintf(0, "ERROR: KCSwitch unexpectedly returned to KernelStart. Halting.\n");
-//     Halt();
-//     return;
+//     load_program(cmd_args[0], cmd_args, idle_process); // Load the initial program into the idle process
+
+//     // Set the idle process pcb values
+//     idle_process->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
+//     idle_process->user_context->pc = &DoIdle; // Set the program counter to the idle function
+    
+//     current_process = idle_process; // Set the global 'current_process' to the newly created idle process
+//     uctxt->pc = &DoIdle; // Set the PC to the idle function
+//     uctxt->sp = (void *)(VMEM_1_LIMIT -4); // Set the stack pointer to the top of the kernel stack
+
+//     TracePrintf(0, "Leaving KernelStart, returning to idle process (PID %d)\n", idle_process->pid);
+//     return; // Return to user mode, entering the idle loop
 // }
+
+void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
+
+    // Print debug information about memory layout
+    TracePrintf(0, "KernelStart: text start = 0x%x\n", _first_kernel_text_page);
+    TracePrintf(0, "KernelStart: data start = 0x%x\n", _first_kernel_data_page);
+    TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
+
+    trap_init(); // Initialize the interrupt vector table
+
+    // Initialize the PCB system
+    if (init_pcb_system() != 0) {
+        TracePrintf(0, "ERROR: Failed to initialize PCB system\n");
+        Halt(); // System cannot function without a PCB system; halt.
+    }
+
+    // Initialize page tables for Region 0 and initial kernel break
+    init_region0_pageTable((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
+
+    enable_virtual_memory(); // Enable virtual memory
+
+    pcb_t *idle_pcb = create_process(NULL); // Pass NULL as it's not a user context being saved directly here
+    if (idle_pcb == NULL) {
+        TracePrintf(0, "ERROR: Failed to create temporary PCB\n");
+        Halt();
+    }
+
+    // Update the global current_process to this bootstrap PCB
+    current_process = idle_pcb;
+
+    // Determine the init program name and arguments from cmd_args
+    char *init_program_name = NULL;
+    char **init_program_args = NULL;
+
+    // Create the 'init' process PCB
+    pcb_t *init_process = create_process(NULL); // create_process will set up its own user_context
+    if (init_process == NULL) {
+        TracePrintf(0, "ERROR: Failed to create init process PCB\n");
+        Halt();
+    }
+
+    // Load the 'init' program into the new 'init_process'
+    int load_result = load_program(cmd_args[0], cmd_args, init_process);
+    if (load_result != 0) { // Assuming load_program returns 0 on success
+        TracePrintf(0, "ERROR: Failed to load init program '%s'. Halting.\n", init_program_name);
+        Halt();
+    }
+
+    TracePrintf(0, "KernelStart: Performing initial context switch to init process (PID %d)\n", init_process->pid);
+    KCSwitch(idle_pcb->kernel_context, idle_pcb, init_process);
+    
+    TracePrintf(0, "ERROR: KCSwitch unexpectedly returned to KernelStart. Halting.\n");
+    Halt();
+    return;
+}
 
 
 pcb_t *create_process(UserContext *uctxt){
@@ -174,7 +162,7 @@ pcb_t *create_process(UserContext *uctxt){
         new_pcb->kernel_stack_pages[i] = pfn;
     }
 
-    TracePrintf(1, "EXIT create_process. Created idle process with PID %d\n", new_pcb->pid);
+    TracePrintf(1, "EXIT create_process. Created process with PID %d\n", new_pcb->pid);
     return new_pcb;
 }
 

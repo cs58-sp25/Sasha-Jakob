@@ -146,7 +146,6 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
     if (frame_bitMap == NULL) {
         TracePrintf(0, "ERROR: Failed to allocate frame_bitMap\n");
     }
-    frame_bitMap[0] = 1;
 
     TracePrintf(0, "Region 0 page table base physical address: %p\n", region0_pt);
 
@@ -154,6 +153,7 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
     for (int i = 0; i < MAX_PT_LEN; i++) {
         unmap_page(region0_pt, i);
     }
+    frame_bitMap[0] = 1;
 
     // Initialize mappings for kernel text, data, and heap sections in the Region 0 page table.
     for (int vpn_index = kernel_text_start; vpn_index < kernel_brk_start; vpn_index++) {

@@ -36,7 +36,4 @@ int main(int argc, char *argv[]) {
 
     // Exit the process. The kernel should then halt.
     return 0;
-
-    // This line should theoretically never be reached if Exit() works correctly
-    return 1;
 }
