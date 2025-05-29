@@ -47,10 +47,18 @@ void SysUnimplemented(UserContext *uctxt){
 void SysFork(UserContext *uctxt) {
     // Create a new PCB object for the new process
     // Clone the page table for region 1
-    
+    pcb_t *new_proc = (pcb_t *) malloc(sizeof(pcb_t));
+    new_proc->user_context = uctxt;
+    current_process->user_context = uctxt;
     // (for now, cow might be implemented later) 
     // copy the data from all of userland over to new pages
-    
+    void *cpage = (void *) malloc(PAGESIZE);
+    if(cpage == NULL){
+        TracePrintf(1, "ERROR, the dummy page for copying could not be allocated.\n");
+        return;
+    }
+    // Copy all of the pages thorugh the copy page most likely, I need to work on other stuff though
+    free(cpage);
     // KCCopy to add the kernel to the new PCB
     // Set the return value in the child context to 0
     // Set the return value in the parent context to the child's pid
@@ -350,7 +358,7 @@ void SysReclaim(UserContext *uctxt){
 
 pcb_t *schedule(){
     pcb_t *curr = current_process;
-    pcb_t *next = pop(ready_queue);
+    pcb_t *next = pcb_from_queue_node(pop(ready_queue));
     int kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
     if(kc == ERROR){
         TracePrintf(1, "There was an issue during switching.\n");
