@@ -37,7 +37,7 @@ void kernel_handler(UserContext* cont){
 }
 
 void clock_handler(UserContext* cont){
-    TracePrintf(1, "There has been a clock trap");
+    TracePrintf(1, "There has been a clock trap.\n");
     // Loops through all delayed processes, decrements their time, and puts them in the ready queue if they're done delaying
     update_delayed_processes();
     // Update the current process's run_time
@@ -47,20 +47,27 @@ void clock_handler(UserContext* cont){
         // If so, change the currently schedeuled process using a KCSwitch
     if(curr->run_time > curr->time_slice){
         pcb_t *next = pcb_from_queue_node(peek(ready_queue));
+        TracePrintf(1, "The process has reached it's max timeslices %d.\n", curr->time_slice);
         if(next != NULL){
             // Set the current process's UC to the given user context
             curr->user_context = cont;
             // Set the current process's status to the default
             curr->state = PROCESS_DEFAULT;
             // Add the process to the ready queue
-            add_to_ready_queue(curr);
 
             // Schedule another process
             next = schedule();
+            if(next == NULL){
+                TracePrintf(1, "ERROR, scheduling a new process has failed.\n");
+                return;
+            }
             // Set the uctxt to the newly scheduled processes uc
+            add_to_ready_queue(curr);
             cont = next->user_context;
         }
         
+    } else {
+        TracePrintf(1, "The process has taken %d of %d timeslices.\n", curr->run_time, curr->time_slice);
     }
 
 }
