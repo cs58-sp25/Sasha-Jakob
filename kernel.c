@@ -69,7 +69,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
 
     trap_init(); // Initialize the interrupt vector table
-
+    syscalls_init();
     // Initialize the PCB system
     if (init_pcb_system() != 0) {
         TracePrintf(0, "ERROR: Failed to initialize PCB system\n");

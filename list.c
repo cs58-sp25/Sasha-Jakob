@@ -46,6 +46,25 @@ void insert_tail(list_t *list, list_node_t *node){
     TracePrintf(1, "EXIT insert_tail.\n");
 }
 
+void insert_head(list_t *list, list_node_t *node){
+    TracePrintf(1, "Enter insert_head.\n");
+    if (node == NULL) {
+        TracePrintf(1, "ERROR, The node to insert does not exist.\n");
+        return; 
+    } 
+    if (list == NULL) {
+        TracePrintf(1, "ERROR, The list to insert in to does not exist.\n");
+        return; 
+    }
+    node->prev = &list->head;
+    node->next = list->head.next;
+    list->head.next->prev = node;
+    list->head.next = node;
+    list->count ++;
+
+    TracePrintf(1, "EXIT insert_head.\n");
+}
+
 int list_contains(list_t *list, list_node_t *node) {
     TracePrintf(1, "ENTER list_contains.\n");
     if (node == NULL) {

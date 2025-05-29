@@ -45,6 +45,7 @@ list_t *create_list(void);
  * @param the list to insert the node into
  */
 void insert_tail(list_t* list, list_node_t *node);
+void insert_head(list_t *list, list_node_t *node);
 
 /**
  * Checks to see if list contains node

@@ -8,6 +8,7 @@
 trap_handler_t trap_handlers[TRAP_VECTOR_SIZE];
 
 void trap_init(void) {
+    TracePrintf(1, "Enter trap_init.\n");
     // Each entry contains the address of the function to handle that specific trap
     trap_handlers[TRAP_KERNEL] = kernel_handler;        // System calls from user processes
     trap_handlers[TRAP_CLOCK] = clock_handler;          // Timer interrupts for scheduling
@@ -20,6 +21,7 @@ void trap_init(void) {
     // Write the address of vector table to REG_VECTOR_BASE register
     WriteRegister(REG_VECTOR_BASE, (unsigned int)trap_handlers);
     TracePrintf(0, "Interrupt vector table initialized at 0x%p\n", trap_handlers);
+    TracePrintf(1, "Exit trap_init.\n");
 }
 
 void kernel_handler(UserContext* cont){

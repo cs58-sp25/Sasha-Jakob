@@ -77,7 +77,10 @@ typedef struct pcb {
     // Queue nodes (intrusive linked list nodes)
     list_node_t queue_node;     // Node for all queues
     list_node_t children_node;  // Node for parent's children list
-
+    
+    void *pipe_buffer;
+    int pipe_len;
+    int write_loc;
 } pcb_t;
 
 
