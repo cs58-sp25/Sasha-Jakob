@@ -301,7 +301,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     /*
      * Zero out the uninitialized data area
      */
-    bzero(li.id_end, li.ud_end - li.id_end);
+    bzero((u_long)li.id_end, li.ud_end - li.id_end);
 
     /*
      * Set the entry point in the process's UserContext

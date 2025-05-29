@@ -47,7 +47,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     // Create the idle process
     pcb_t *idle_process = create_process(uctxt); // The uctxt parameter here is the initial UserContext provided by the hardware
     
-    // load_program(cmd_args[0], cmd_args, idle_process); // Load the initial program into the idle process
+    load_program(cmd_args[0], cmd_args, idle_process); // Load the initial program into the idle process
 
     // Set the idle process pcb values
     idle_process->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
