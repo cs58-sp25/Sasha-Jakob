@@ -9,7 +9,7 @@ syscall_handler_t syscall_handlers[256]; // Array of trap handlers
 
 // Syscall handler table
 void syscalls_init(void){
-
+    TracePrintf(1, "Enter syscalls_init.\n");
     // And the syscall code with the mask to get just the code, idk why this was set up this way in yuser.h
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
     syscall_handlers[YALNIX_FORK & YALNIX_MASK] = SysUnimplemented; //SysFork,
@@ -33,6 +33,7 @@ void syscalls_init(void){
     syscall_handlers[YALNIX_CVAR_WAIT & YALNIX_MASK] = SysUnimplemented; //SysCvarWait,
     syscall_handlers[YALNIX_RECLAIM & YALNIX_MASK] = SysUnimplemented; //SysReclaim,
     // Add other syscall handlers here
+    TracePrintf(1,"Exit syscalls_init.\n");
 }
 
 void SysUnimplemented(UserContext *uctxt){

@@ -9,6 +9,7 @@
 
 // Magic number sorry bout it
 #define MAX_SYNCS 128
+#define PCB_BLOCKED 30
 
 typedef struct pipe {
     char buffer[PIPE_BUFFER_LEN];
@@ -54,11 +55,12 @@ extern sync_obj_t *sync_table[MAX_SYNCS];  // Storing all sync objects (pipes, l
 extern int global_sync_counter; 
 
 int InitSyncObject(sync_type_t type, void *object);
+int GetCheckSync(int id, sync_type_t expected, sync_obj_t **out_sync);
 
 int SyncInitPipe(int *pipe_idp);
-void SyncShiftPipeBuffer(pipe_t *pipe, int len);
 int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr);
-void SyncUnblockOneReader(pipe_t *pipe);
+void SyncDrainWriters(pipe_t *pipe);
+void SyncDrainReaders(pipe_t *pipe);
 int SyncWritePipe(int pipe_id, void *buf, int len);
 
 int SyncInitLock(int *lock_idp);
@@ -71,7 +73,7 @@ int SyncCvarBroadcast(int cvar_id);
 int SyncCvarWait(int cvar_id, int lock_id);
 
 int SyncReclaimSync(int id);
-int GetNewIPD(void);
-void FreeIPD(int ipd);
+int GetNewID(void);
+void FreeID(int id);
 
 #endif
