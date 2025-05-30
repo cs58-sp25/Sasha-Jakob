@@ -6,7 +6,7 @@
 
 sync_obj_t *sync_table[MAX_SYNCS];
 int global_sync_counter = 0;
-char ipd_used[MAX_SYNCS] = {0};
+char id_used[MAX_SYNCS] = {0};
 
 
 int InitSyncObject(sync_type_t type, void *object){
@@ -19,12 +19,12 @@ int InitSyncObject(sync_type_t type, void *object){
     }
     // set the sync object's id and type
     new_sync->type = type;
-    int ipd = GetNewIPD();
-    if(ipd < 0){
-        TracePrintf(1,"ERROR, could not find a valid ipd.\n");
+    int id = GetNewID();
+    if(id < 0){
+        TracePrintf(1,"ERROR, could not find a valid id.\n");
         free(new_sync);
     }
-    new_sync->id = ipd;
+    new_sync->id = id;
     // check to see type
         // Cast the object to the type based on sync and add it to the sync object
         // throw an error if invalid type somehow
@@ -41,14 +41,29 @@ int InitSyncObject(sync_type_t type, void *object){
         default:
             // This should never be reached in normal running
             free(new_sync);
-            FreeIPD(ipd);
+            FreeID(id);
             TracePrintf(1,"Error, an invalid sync type has tried to be initialized.\n");
             return ERROR;
     }
     // add the sync object to the global sync table
-    sync_table[ipd] = new_sync;
-    // return idp
-    return ipd;
+    sync_table[id] = new_sync;
+    // return id
+    return id;
+}
+
+int GetCheckSync(int id, sync_type_t expected, sync_obj_t **out_sync){
+    if (id < 0 || id >= MAX_SYNCS || sync_table[id] == NULL){
+        TracePrintf(1, "ERROR, invalid sync object ID %d.\n", id);
+        return ERROR;
+    }
+
+    sync_obj_t *sync = sync_table[id];
+    if (sync->type != expected) {
+        TracePrintf(1, "ERROR, Sync object ID %d is not of expected type %d (got type %d", id, expected, sync->type);
+    }
+
+    *out_sync = sync;
+    return SUCCESS;
 }
 
 int SyncInitPipe(int *pipe_idp){
@@ -88,16 +103,9 @@ int SyncInitPipe(int *pipe_idp){
 // otherwise reads whatever is and returns
 
 int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
-    TracePrintf(1, "Enter SyncReadPipe with ipd %d.\n", pipe_id);
-    if(pipe_id < 0 || pipe_id >= MAX_SYNCS || sync_table[pipe_id] == NULL){
-        TracePrintf(1, "ERROR, invalid ipd.\n");
-        return ERROR;
-    }
-
-    // Get the pipe from the id
-    sync_obj_t *sync = sync_table[pipe_id];
-    if(sync->type != PIPE){
-        TracePrintf(1, "ERROR, sync object is not a pipe.\n");
+    TracePrintf(1, "Enter SyncReadPipe with id %d.\n", pipe_id);
+    sync_obj_t *sync;
+    if (GetCheckSync(pipe_id, PIPE, &sync) == ERROR){
         return ERROR;
     }
 
@@ -225,17 +233,10 @@ void SyncDrainReaders(pipe_t *pipe){
 // Just kidding this is blocking now
 int SyncWritePipe(int pipe_id, void *buf, int len){
     TracePrintf(1, "Enter SyncWritePipe.\n");
-    if(pipe_id < 0 || pipe_id >= MAX_SYNCS || sync_table[pipe_id] == NULL){
-        TracePrintf(1, "ERROR, invalid ipd.\n");
+    sync_obj_t *sync;
+    if (GetCheckSync(pipe_id, PIPE, &sync) == ERROR){
         return ERROR;
-    }
-
-    // Get the pipe from the id
-    sync_obj_t *sync = sync_table[pipe_id];
-    if(sync->type != PIPE){
-        TracePrintf(1, "ERROR, sync object is not a pipe.\n");
-        return ERROR;
-    }
+    } 
 
     // check to see if the pipe is valid
         // if not return error
@@ -309,36 +310,77 @@ int SyncInitLock(int *lock_idp){
 }
 
 int SyncLockAcquire(int lock_id){
+    TracePrintf(1, "Enter SyncLockAcquire.\n");
     // Check to see if the lock is valid
         // If not throw and error
-    
+    sync_obj_t *sync;
+    if (GetCheckSync(lock_id, LOCK, &sync) == ERROR){
+        return ERROR;
+    } 
+
     // Get the lock and current pcb
+    lock_t *lock = sync->object.lock;
+    
     // If the lock is unlocked
         // Lock it
         // Set the owner
         // return 0;
+    if(!lock->locked){
+        lock->locked = true;
+        lock->owner = current_process;
+        return SUCCESS;
+    } 
+
+    
     // If lock is held
     // Add the pcb to the queue lock
     // set the pcbs waiting lock
     // block the current process
-    // Context Switch
-    // return 0;
+    insert_tail(&lock->waiters, &current_process->queue_node);
+    current_process->state = PROCESS_BLOCKED;
+    current_process->waiting_lock_id = lock_id;
+    
+    return PCB_BLOCKED;
 
 }
 
 int SyncLockRelease(int lock_id){
+    TracePrintf(1, "Enter SyncLockRelease.\n");
     // Check to see if the lock is valid
-        // If not throw and error
-    
+        // If not throw and error 
+    sync_obj_t *sync;
+    if (GetCheckSync(lock_id, LOCK, &sync) == ERROR){
+        return ERROR;
+    } 
     // Get the lock and current pcb
+    lock_t *lock = sync->object.lock;
+    pcb_t *curr = current_process;
+
     // Check if the current process owns the lock
         // If not throw an error
+    if(lock->owner != curr){
+        TracePrintf(1, "ERROR, lock %d is owned by process %d not process %d.\n", lock_id, lock->owner->pid, curr->pid);
+        return ERROR;
+    }
+
     // Check if there are waiters
         // If so give the lock to the next waiter
         // null the waiter's waiting lock
         // Set the next waiter to ready
+    if(lock->waiters.count != 0){
+        pcb_t *next = pcb_from_queue_node(pop(&lock->waiters));
+        next->state = PROCESS_DEFAULT;
+
+        add_to_ready_queue(next);
+        TracePrintf(1, "Exit SyncLockRelease, the next process waiting was given the lock.\n");
+        return SUCCESS;
+    }
+
     // else set locked to false and owner to NULL
-    // return 0
+    lock->locked = false;
+    lock->owner = NULL;
+    TracePrintf(1, "Exit SyncLockRelease, there were no processes waiting on this lock.\n");
+    return 0;
 
 }
 
@@ -433,31 +475,31 @@ int SyncReclaimSync(int id){
 
 }
 
-int GetNewIPD(void){
-    TracePrintf(1,"Enter GetNewIPD.\n");
-    // Finds the next free ipd (loops over byte array)
+int GetNewID(void){
+    TracePrintf(1,"Enter GetNewID.\n");
+    // Finds the next free id (loops over byte array)
     for (int i=0; i <MAX_SYNCS; i++){
-        if(ipd_used[i] == 0) {
-            // When one is found set it to being used, increment the counter and return the ipd
-            ipd_used[i] = 1;
+        if(id_used[i] == 0) {
+            // When one is found set it to being used, increment the counter and return the id
+            id_used[i] = 1;
             global_sync_counter++;
-            TracePrintf(1,"Exit GetNewIPD.\n");
+            TracePrintf(1,"Exit GetNewID.\n");
             return i;
         }
     }
-    TracePrintf(1,"ERROR, there are no IPDs remaining.\n");
+    TracePrintf(1,"ERROR, there are no IDs remaining.\n");
     return ERROR;
 }
 
-void FreeIPD(int ipd){ 
-    TracePrintf(1,"Enter FreeIPD.\n");
-    if(ipd >=0 && ipd < MAX_SYNCS && ipd_used[ipd] == 1){
-        TracePrintf(1, "IPD %d is now being freed", ipd);
-        ipd_used[ipd] = 0;
+void FreeID(int id){ 
+    TracePrintf(1,"Enter FreeID.\n");
+    if(id >=0 && id < MAX_SYNCS && id_used[id] == 1){
+        TracePrintf(1, "ID %d is now being freed", id);
+        id_used[id] = 0;
         global_sync_counter--;
     } else {
-        TracePrintf(1, "ERROR, IPD %d is invalid.\n", ipd);
+        TracePrintf(1, "ERROR, ID %d is invalid.\n", id);
         return;
     }
-    TracePrintf(1,"Exit FreeIPD.\n");
+    TracePrintf(1,"Exit FreeID.\n");
 }

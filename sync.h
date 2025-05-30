@@ -55,6 +55,7 @@ extern sync_obj_t *sync_table[MAX_SYNCS];  // Storing all sync objects (pipes, l
 extern int global_sync_counter; 
 
 int InitSyncObject(sync_type_t type, void *object);
+int GetCheckSync(int id, sync_type_t expected, sync_obj_t **out_sync);
 
 int SyncInitPipe(int *pipe_idp);
 int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr);
@@ -72,7 +73,7 @@ int SyncCvarBroadcast(int cvar_id);
 int SyncCvarWait(int cvar_id, int lock_id);
 
 int SyncReclaimSync(int id);
-int GetNewIPD(void);
-void FreeIPD(int ipd);
+int GetNewID(void);
+void FreeID(int id);
 
 #endif
