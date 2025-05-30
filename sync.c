@@ -151,9 +151,9 @@ void SyncDrainWriters(pipe_t *pipe) {
     while(1) {
         list_node_t *node = pop(&pipe->writers);
         if(node == NULL){
-             TracePrintf(1, "The writers queue is drained.\n");
-             if (pipe->bytes_in_buffer != 0) SyncDrainReaders(pipe);
-             return;
+            TracePrintf(1, "The writers queue is drained.\n");
+            if (pipe->bytes_in_buffer != 0 && pipe->readers.count != 0) SyncDrainReaders(pipe);
+            return;
         }
 
         pcb_t *writer = pcb_from_queue_node(node);
@@ -173,7 +173,7 @@ void SyncDrainWriters(pipe_t *pipe) {
         if (writer->write_loc < len) {
            insert_head(&pipe->writers, node);
            TracePrintf(1, "Writer %d did not complete it's write, requeued.\n", writer->pid);
-           if (pipe->bytes_in_buffer != 0) SyncDrainReaders(pipe);
+           if (pipe->bytes_in_buffer != 0 && pipe->readers.count != 0) SyncDrainReaders(pipe);
            return;
         }
 
@@ -182,10 +182,9 @@ void SyncDrainWriters(pipe_t *pipe) {
         writer->write_loc = 0;
         writer->waiting_pipe_id = -1;
         writer->state = PROCESS_DEFAULT;
-        writer->user_context->regs[0] = 0;
+        writer->user_context->regs[0] = len;
 
         add_to_ready_queue(writer);
-
     }
 }
 
@@ -195,7 +194,7 @@ void SyncDrainReaders(pipe_t *pipe){
         list_node_t *node = pop(&pipe->readers);
         if (node == NULL){
             TracePrintf(1,"Exit, SyncDrainReaders, the readers queue is drained.\n");
-            if (pipe->bytes_in_buffer < PIPE_BUFFER_LEN) SyncDrainWriters(pipe);
+            if (pipe->bytes_in_buffer < PIPE_BUFFER_LEN && pipe->readers.count != 0) SyncDrainWriters(pipe);
             return;
         }
 
@@ -220,7 +219,7 @@ void SyncDrainReaders(pipe_t *pipe){
         TracePrintf(1, "Reader %d read %d bytes.\n", reader->pid, to_read);
     }
     TracePrintf(1, "Exit SyncDrainReaders, the pipe buffer has been drained.\n");
-    if (pipe->bytes_in_buffer < PIPE_BUFFER_LEN) SyncDrainWriters(pipe);
+    if (pipe->bytes_in_buffer < PIPE_BUFFER_LEN && pipe->readers.count != 0) SyncDrainWriters(pipe);
 }
 
 // Just kidding this is blocking now
@@ -275,6 +274,9 @@ int SyncWritePipe(int pipe_id, void *buf, int len){
 
         return PCB_BLOCKED;
     }
+
+    writer->user_context->regs[0] = len;
+    SyncDrainReaders(pipe);
     return SUCCESS;
 }
 
