@@ -8,7 +8,6 @@
 #include <hardware.h>
 #include <yalnix.h>
 
-#define MIN_FRAME_ALLOWED 30
 
 int vm_enabled = 0;       // Initialize to 0 (VM disabled) by default
 void *kernel_brk = NULL;  // Current kernel break address
@@ -48,6 +47,26 @@ void free_frame(int pfn) {
 
     frame_bitMap[pfn] = 0; // Mark the frame as free
     TracePrintf(5, "free_frame: Freed frame %d\n", pfn);
+}
+
+int GetFrame(){
+  for (int i = 0; i < NUM_VPN; i++)
+  {
+    // Check each of the 8 bits in the i-th byte.
+    for (int j = 0; j < 8; j++)
+    {
+      // Check if the j-th bit is free.
+      if ((frame_bitMap[i] & (1 << j)) == 0)
+      {
+        // Mark the bit as used.
+        frame_bitMap[i] |= (1 << j);
+        // Return the corresponding frame number.
+        TracePrintf(0, "Getting free frame %d\n", i * 8 + j);
+        return i * 8 + j;
+      }
+    }
+  }
+  return -1;
 }
 
 

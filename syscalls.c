@@ -48,7 +48,7 @@ void SysFork(UserContext *uctxt) {
     // Create a new PCB object for the new process
     // Clone the page table for region 1
     pcb_t *new_proc = (pcb_t *) malloc(sizeof(pcb_t));
-    new_proc->user_context = uctxt;
+    memcpy(new_proc->user_context, uctxt, sizeof(UserContext));
     current_process->user_context = uctxt;
     // (for now, cow might be implemented later) 
     // copy the data from all of userland over to new pages

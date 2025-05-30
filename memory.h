@@ -40,6 +40,9 @@ int allocate_frame(void);
 void free_frame(int pfn);
 
 
+int GetFrame();
+
+
 /**
  * @brief Sets the kernel's program break (heap end) address.
  *

@@ -30,13 +30,9 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt);
  * the user context for the new process. It also handles the allocation of
  * kernel stack frames and Region 1 page table entries.
  *
- * @param uctxt A pointer to the UserContext to be used for the new process.
  * @return A pointer to the newly created process's PCB on success, or NULL on failure.
  */
-pcb_t *create_process(UserContext *uctxt);
-
-
-int load_program(char *name, char *args[], pcb_t *proc);
+pcb_t *create_process(void);
 
 
 /**

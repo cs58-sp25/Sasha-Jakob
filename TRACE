@@ -12,11 +12,9 @@ Hardware   | Calling KernelStart
 Hardware   ----
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 7 blocks allocated, 1916 bytes total
-Yalnix     KernelStart: text start = 0x10
-Yalnix     KernelStart: data start = 0x15
-Yalnix     KernelStart: brk start = 0x1b
-Hardware       | WriteRegister(REG_VECTOR_BASE,0x02cac0)
-Yalnix     Interrupt vector table initialized at 0x0x2cac0
+Yalnix     KernelStart
+Hardware       | WriteRegister(REG_VECTOR_BASE,0x02cb40)
+Yalnix     Interrupt vector table initialized at 0x0x2cb40
 Yalnix     ENTER init_pcb_system.
 Yalnix     ENTER create_list.
 Hardware   Kernel heap OK.
@@ -46,7 +44,7 @@ Yalnix     EXIT init_pcb_system.
 Yalnix     Initializing page table...
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 12 blocks allocated, 4032 bytes total
-Yalnix     Region 0 page table base physical address: 0x2c8a0
+Yalnix     Region 0 page table base physical address: 0x2c920
 Yalnix     Kernel data/heap permission for page: 21 is 3
 Yalnix     Kernel data/heap permission for page: 22 is 3
 Yalnix     Kernel data/heap permission for page: 23 is 3
@@ -55,7 +53,7 @@ Yalnix     Kernel data/heap permission for page: 25 is 3
 Yalnix     Kernel data/heap permission for page: 26 is 3
 Yalnix     Kernel text, data, and heap initialized with 11 total entries
 Yalnix     Kernel stack initialized with 2 total entries
-Hardware       | WriteRegister(REG_PTBR0,0x02c8a0)
+Hardware       | WriteRegister(REG_PTBR0,0x02c920)
 Hardware       | WriteRegister(REG_PTLR0,0x000080)
 Hardware       | WriteRegister(REG_VM_ENABLE,0x000001)
 Hardware   Enabling VM
@@ -66,7 +64,7 @@ Hardware   initializing TLB to be empty
 Hardware   PhysLimit 36000, my_break 36000
 Hardware   clearing TLB
 Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x0, PTLR1 0x0
-Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2c8a0, PTLR0 0x80
+Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2c920, PTLR0 0x80
 Hardware   moving kernel text,data,heap into TLB
 Hardware   PageInTLB[16] addr 0x20000: 0 -> 1
 Hardware   PageInTLB[17] addr 0x22000: 0 -> 1
@@ -84,43 +82,43 @@ Yalnix     Virtual memory enabled
 Yalnix     ENTER create_process.
 Yalnix     ENTER create_pcb.
 Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 13 blocks allocated, 4664 bytes total
+Hardware   Kernel heap usage: 14 blocks allocated, 4724 bytes total
 Yalnix     ENTER list_init.
 Yalnix     EXIT list_init.
 Yalnix     EXIT create_pcb.
 Yalnix     Enter allocate_frame()
 Yalnix     allocate_frame: Allocated frame 1
+Hardware   Kernel heap OK.
+Hardware   Kernel heap usage: 15 blocks allocated, 4736 bytes total
+Yalnix     EXIT create_process. Created process with PID 0
 Hardware       | WriteRegister(REG_PTBR1,0x02f104)
 Hardware       | WriteRegister(REG_PTLR1,0x000080)
-Yalnix     Wrote region 1 page table base register to 0x2f104
-Yalnix     Wrote region 1 page table limit register to 1
-Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 14 blocks allocated, 4676 bytes total
-Yalnix     EXIT create_process. Created process with PID 0
-Yalnix     ENTER create_process.
+Yalnix     Creating init pcb with name yalnix
 Yalnix     ENTER create_pcb.
 Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 15 blocks allocated, 5308 bytes total
+Hardware   Kernel heap usage: 17 blocks allocated, 5428 bytes total
 Yalnix     ENTER list_init.
 Yalnix     EXIT list_init.
 Yalnix     EXIT create_pcb.
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 2
-Hardware       | WriteRegister(REG_PTBR1,0x02f3b8)
-Hardware       | WriteRegister(REG_PTLR1,0x000080)
-Yalnix     Wrote region 1 page table base register to 0x2f3b8
-Yalnix     Wrote region 1 page table limit register to 1
+Yalnix     prog_size 4, text 2 data 2 bss 0 pages
+Yalnix     LoadProgram: heap_size 4, stack_size 1
 Hardware   Kernel heap OK.
-Hardware   Kernel heap usage: 16 blocks allocated, 5320 bytes total
-Yalnix     EXIT create_process. Created process with PID 1
-Yalnix     No arguments provided -> loading default init process.
-Yalnix     Enter LoadProgram.
+Hardware   Kernel heap usage: 18 blocks allocated, 5440 bytes total
+Yalnix     Getting free frame 1
+Yalnix     Mapping text page 0 to frame 1
+Yalnix     Getting free frame 2
+Yalnix     Mapping text page 1 to frame 2
+Yalnix     Getting free frame 3
+Yalnix     Getting free frame 4
+Yalnix     Getting free frame 5
+Hardware       | WriteRegister(REG_TLB_FLUSH,TLB_FLUSH_1)
+Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x2f104, PTLR1 0x80
 Hardware   ========= Hardware receives signal ==============
 Hardware   FrameworkSignalHandler(11), depth 2
 Hardware   ----
 Hardware   | Trap Segmentation fault
-Hardware   | From usermode  SP [region 0] 0xff900 | PC [region 0] 0x248e4
-Hardware   | pid 1 | PTBR1 0x02f3b8 | kstack 126 127
+Hardware   | From usermode  SP [region 0] 0xff900 | PC [region 0] 0x258c3
+Hardware   | pid 0 | PTBR1 0x02f104 | kstack 126 127
 Hardware   The kernel has an unsresolved trap, depth = 2
 Hardware   | 
 

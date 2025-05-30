@@ -1,39 +1,28 @@
-/**
- * Updated: 5/2725
- * File: init.c
- * Description: Userland init.c file for the Yalnix operating system
- */
+#include <yuser.h>
 
-#include <yalnix.h>
-#include <hardware.h> // For constants like VMEM_0_LIMIT if needed for custom setup
-#include <stdio.h> // For printf or TracePrintf for debugging
+int main(void)
+{
+  TracePrintf(0, "Hello, init!\n");
 
-/*
- * init.c
- *
- * This is a simple default init program for the Yalnix OS.
- * As per TA feedback, it performs minimal setup (just prints info)
- * and then exits. The kernel should halt when this process exits.
- *
- * It serves as a basic demonstration that the kernel can:
- * 1. Load a user-level program.
- * 2. Pass command-line arguments to it.
- * 3. Handle the Exit() system call.
- * 4. Halt the system when the init process terminates.
- */
-int main(int argc, char *argv[]) {
-    // Print a message to confirm init has started and its PID
-    printf("Init process (PID %d) started.\n", getpid());
+  TracePrintf(0, "Will delay for 3 ticks\n");
+  Delay(3);
+  TracePrintf(0, "Back from delay\n");
 
-    // Print the command-line arguments received by init
-    printf("Init received %d arguments:\n", argc);
-    for (int i = 0; i < argc; i++) {
-        printf("  argv[%d]: \"%s\"\n", i, argv[i]);
-    }
+  TracePrintf(0, "Will delay again for 2 ticks\n");
+  Delay(2);
+  TracePrintf(0, "Back from delay 2\n");
 
-    // Indicate that init is exiting
-    printf("Init process (PID %d) is now exiting.\n", getpid());
+  int rc = Delay(-1); // This should not work and return with an error
+  if (rc != -1)
+  {
+    TracePrintf(0, "Delay returned %d instead of -1\n", rc);
+    Exit(1);
+  }
+  TracePrintf(0, "Delay returned -1 as expected\n");
 
-    // Exit the process. The kernel should then halt.
-    return 0;
+  Delay(0); // Should return immediately
+
+  int pid = GetPid();
+  TracePrintf(0, "PID of init: %d\n", pid);
+  Exit(0);
 }

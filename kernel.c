@@ -61,63 +61,89 @@
 //     return; // Return to user mode, entering the idle loop
 // }
 
+
 void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
+  TracePrintf(0, "KernelStart\n");
 
-    // Print debug information about memory layout
-    TracePrintf(0, "KernelStart: text start = 0x%x\n", _first_kernel_text_page);
-    TracePrintf(0, "KernelStart: data start = 0x%x\n", _first_kernel_data_page);
-    TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
+  // Initialize trap handlers
+  trap_init();
 
-    trap_init(); // Initialize the interrupt vector table
-
-    // Initialize the PCB system
-    if (init_pcb_system() != 0) {
-        TracePrintf(0, "ERROR: Failed to initialize PCB system\n");
-        Halt(); // System cannot function without a PCB system; halt.
-    }
-
-    // Initialize page tables for Region 0 and initial kernel break
-    init_region0_pageTable((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
-
-    enable_virtual_memory(); // Enable virtual memory
-
-    pcb_t *idle_pcb = create_process(NULL); // Pass NULL as it's not a user context being saved directly here
-    if (idle_pcb == NULL) {
-        TracePrintf(0, "ERROR: Failed to create temporary PCB\n");
-        Halt();
-    }
-
-    // Update the global current_process to this bootstrap PCB
-    current_process = idle_pcb;
-
-    // Determine the init program name and arguments from cmd_args
-    char *init_program_name = NULL;
-    char **init_program_args = NULL;
-
-    // Create the 'init' process PCB
-    pcb_t *init_process = create_process(NULL); // create_process will set up its own user_context
-    if (init_process == NULL) {
-        TracePrintf(0, "ERROR: Failed to create init process PCB\n");
-        Halt();
-    }
-
-    // Load the 'init' program into the new 'init_process'
-    int load_result = load_program(cmd_args[0], cmd_args, init_process);
-    if (load_result != 0) { // Assuming load_program returns 0 on success
-        TracePrintf(0, "ERROR: Failed to load init program '%s'. Halting.\n", init_program_name);
-        Halt();
-    }
-
-    TracePrintf(0, "KernelStart: Performing initial context switch to init process (PID %d)\n", init_process->pid);
-    KCSwitch(idle_pcb->kernel_context, idle_pcb, init_process);
-    
-    TracePrintf(0, "ERROR: KCSwitch unexpectedly returned to KernelStart. Halting.\n");
+  // Initialize PCB system, which includes process queues
+  if (init_pcb_system() != 0) {
+    TracePrintf(0, "ERROR: Failed to initialize PCB system\n");
     Halt();
-    return;
+  }
+
+  // Initialize Region 0 page table
+  init_region0_pageTable((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
+
+  // Enable virtual memory
+  enable_virtual_memory();
+
+
+  // Create the idle process
+  pcb_t *idle_pcb = create_process(); // create_process handles its own user_context setup
+  if (idle_pcb == NULL) {
+    TracePrintf(0, "ERROR: Failed to create idle process PCB\n");
+    Halt();
+  }
+  
+  // Set the idle process's user context to point to DoIdle
+  // The initial user context for the idle process should be copied from the kernel's entry context (uctxt).
+  memcpy(idle_pcb->user_context, uctxt, sizeof(UserContext));
+  idle_pcb->user_context->pc = &DoIdle; // DoIdle is in your kernel.c
+  idle_pcb->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Standard initial stack pointer
+
+  // Set hardware registers for Region 1 page table
+  WriteRegister(REG_PTBR1, (u_long)idle_pcb->region1_pt); // Set base physical address of Region 1 page table (now a static array address)
+  WriteRegister(REG_PTLR1, MAX_PT_LEN); // Set limit of Region 1 page table to 1 entry initially
+
+  // Set the global current_process to idle initially
+  current_process = idle_pcb;
+  idle_pcb->state = PROCESS_RUNNING;
+
+  // Determine the name of the initial program to load
+  char *name = (cmd_args != NULL && cmd_args[0] != NULL) ? cmd_args[0] : "init";
+  TracePrintf(0, "Creating init pcb with name %s\n", name);
+
+  // Create the 'init' process PCB
+  pcb_t *init_pcb = create_pcb();
+  if (init_pcb == NULL) {
+    TracePrintf(0, "ERROR: Failed to create init process PCB\n");
+    Halt();
+  }
+  // Copy initial UserContext for init process from uctxt
+  memcpy(init_pcb->user_context, uctxt, sizeof(UserContext));
+
+  // Load the 'init' program into the new 'init_process'
+  int load_result = LoadProgram(name, cmd_args, init_pcb);
+  if (load_result != SUCCESS) {
+    TracePrintf(0, "ERROR: Failed to load init program '%s'. Halting.\n", name);
+    Halt();
+  }
+
+  // Set hardware registers for Region 1 page table
+  WriteRegister(REG_PTBR1, (u_long)init_pcb->region1_pt); // Set base physical address of Region 1 page table (now a static array address)
+  WriteRegister(REG_PTLR1, MAX_PT_LEN); // Set limit of Region 1 page table to 1 entry initially
+  WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+
+  // Add the init process to the ready queue
+  add_to_ready_queue(init_pcb);
+
+  TracePrintf(0, "KernelStart: Performing initial context switch from idle (PID %d) to init process (PID %d)\n", idle_pcb->pid, init_pcb->pid);
+  // This call is correct, assuming KCSwitch is the proper function pointer for KernelContextSwitch.
+  int rc = KernelContextSwitch(KCSwitch, (void *)idle_pcb, (void *)init_pcb);
+  if (rc == -1){
+    TracePrintf(0, "KernelContextSwitch failed when copying idle into init\n");
+    Halt();
+  }
+
+  WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+  TracePrintf(0, "Exiting KernelStart\n");
 }
 
 
-pcb_t *create_process(UserContext *uctxt){
+pcb_t *create_process(void){
     TracePrintf(1, "ENTER create_process.\n");
     pcb_t *new_pcb = create_pcb();
 
@@ -134,13 +160,6 @@ pcb_t *create_process(UserContext *uctxt){
     // Assign important values to the new process PCB
     int pid = helper_new_pid(new_pcb->region1_pt);
     new_pcb->pid = pid;
-    new_pcb->user_context = uctxt; // Copy the UserContext from the argument
-
-    // Set hardware registers for Region 1 page table
-    WriteRegister(REG_PTBR1, (u_long)new_pcb->region1_pt); // Set base physical address of Region 1 page table (now a static array address)
-    WriteRegister(REG_PTLR1, MAX_PT_LEN); // Set limit of Region 1 page table to 1 entry initially
-    TracePrintf(0, "Wrote region 1 page table base register to %p\n", (u_long)new_pcb->region1_pt);
-    TracePrintf(0, "Wrote region 1 page table limit register to %u\n", 1);
 
 
     int kernel_stack_start = KERNEL_STACK_BASE >> PAGESHIFT;
@@ -164,23 +183,6 @@ pcb_t *create_process(UserContext *uctxt){
 
     TracePrintf(1, "EXIT create_process. Created process with PID %d\n", new_pcb->pid);
     return new_pcb;
-}
-
-
-int load_program(char *name, char *args[], pcb_t *proc) {
-
-    if (args == NULL || name == NULL) {
-        TracePrintf(0, "No arguments provided -> loading default init process.\n");
-        int result = LoadProgram("test/init", NULL, proc);
-        return result; // Invalid arguments
-    }
-
-    int load_result = LoadProgram(args[0], args, proc);
-    if (load_result != SUCCESS) { // Check for error loading program
-        TracePrintf(0, "ERROR: LoadProgram failed for '%s' with error %d.\n", args[0], load_result);
-        return ERROR;
-    }
-    return 0;
 }
 
 

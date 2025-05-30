@@ -37,6 +37,8 @@ pcb_t *create_pcb(void) {
         TracePrintf(1, "ERROR, The kernel has failed to allocate the pcb.\n");
         return NULL;
     } // If it failed return NULL
+    
+    new_pcb->user_context = malloc(sizeof(UserContext));
 
     // Assign unique PID
     new_pcb->pid = 0;
