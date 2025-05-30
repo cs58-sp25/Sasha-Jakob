@@ -1,0 +1,24 @@
+*.Identifier
+.DS_Store
+.vscode
+
+# Executables
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.dylib
+yalnix
+
+# Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Other files
+DISK
+TTYLOG*
+TRACE
+init
