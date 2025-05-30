@@ -40,9 +40,6 @@ int allocate_frame(void);
 void free_frame(int pfn);
 
 
-int GetFrame();
-
-
 /**
  * @brief Sets the kernel's program break (heap end) address.
  *
@@ -77,6 +74,9 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
  * virtual after this point.
  */
 void enable_virtual_memory(void);
+
+
+pte_t *InitializeKernelStack();
 
 
 /**

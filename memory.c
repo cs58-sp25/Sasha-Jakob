@@ -49,26 +49,6 @@ void free_frame(int pfn) {
     TracePrintf(5, "free_frame: Freed frame %d\n", pfn);
 }
 
-int GetFrame(){
-  for (int i = 0; i < NUM_VPN; i++)
-  {
-    // Check each of the 8 bits in the i-th byte.
-    for (int j = 0; j < 8; j++)
-    {
-      // Check if the j-th bit is free.
-      if ((frame_bitMap[i] & (1 << j)) == 0)
-      {
-        // Mark the bit as used.
-        frame_bitMap[i] |= (1 << j);
-        // Return the corresponding frame number.
-        TracePrintf(0, "Getting free frame %d\n", i * 8 + j);
-        return i * 8 + j;
-      }
-    }
-  }
-  return -1;
-}
-
 
 int SetKernelBrk(void *addr) {
     TracePrintf(1, "SetKernelBrk: Called with addr=%p, current kernel_brk=%p, vm_enabled=%d\n",
@@ -226,6 +206,21 @@ void enable_virtual_memory(void) {
     WriteRegister(REG_VM_ENABLE, 1); // Write 1 to REG_VM_ENABLE register to enable virtual memory
     vm_enabled = 1; // Update global flag to track that VM is now enabled
     TracePrintf(0, "Virtual memory enabled\n");
+}
+
+pte_t *InitializeKernelStack(){
+  pte_t *kernel_stack = (pte_t *)malloc((KERNEL_STACK_MAXSIZE / PAGESIZE) * sizeof(pte_t));
+  if (kernel_stack == NULL){
+    TracePrintf(0, "Failed to allocate kernel stack\n");
+    Halt();
+  }
+
+  for (int j = 0; j < (KERNEL_STACK_MAXSIZE / PAGESIZE); j++){
+    int vpage = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
+    int pfn = allocate_frame();
+    map_page(kernel_stack, vpage, pfn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
+  }
+  return kernel_stack;
 }
 
 

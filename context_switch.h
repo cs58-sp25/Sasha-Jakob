@@ -57,79 +57,6 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used);
 
 
 /**
- * Save the current user context to the PCB
- * Called during trap handling
- *
- * @param uctxt User context from trap
- * @param proc Process to save context to
- */
-void save_user_context(UserContext *uctxt, pcb_t *proc);
-
-
-/**
- * Restore user context from PCB
- * Called before returning from trap
- *
- * @param uctxt User context destination
- * @param proc Process to restore context from
- */
-void restore_user_context(UserContext *uctxt, pcb_t *proc);
-
-
-/**
- * Copy kernel stack contents
- * Copies the current kernel stack to new kernel stack frames
- *
- * @param src_frames Source stack frame array
- * @param dst_frames Destination stack frame array
- * @param num_frames Number of frames in kernel stack
- * @return 0 on success, ERROR on failure
- */
-int copy_kernel_stack(int *src_frames, int *dst_frames, int num_frames);
-
-
-/**
- * Switch to a new process
- * High-level function that handles complete context switch
- *
- * @param next Next process to run
- * @return 0 on success, ERROR on failure
- */
-int switch_to_process(pcb_t *next);
-
-
-/**
- * Dispatch the next ready process
- * Selects the next process from ready queue and switches to it
- *
- * @return 0 on success, ERROR on failure
- */
-int dispatch_next_process(void);
-
-
-/**
- * Initialize kernel context in PCB
- * Sets up initial kernel context for a new process
- *
- * @param proc Process PCB to initialize
- * @return 0 on success, ERROR on failure
- */
-int init_kernel_context(pcb_t *proc);
-
-
-/**
- * Initialize user context in PCB
- * Sets up initial user context for a new process
- *
- * @param proc Process PCB to initialize
- * @param entry_point Program entry point address
- * @param stack_pointer Initial stack pointer
- * @return 0 on success, ERROR on failure
- */
-int init_user_context(pcb_t *proc, void *entry_point, void *stack_pointer);
-
-
-/**
  * Setup temporary mapping for kernel stack
  * Creates a temporary mapping to access a kernel stack frame
  *
@@ -148,5 +75,14 @@ void *setup_temp_mapping(int frame);
 void remove_temp_mapping(void *addr);
 
 
-int map_kernel_stack(int *kernel_stack_frames);
+/**
+ * Map the kernel stack for a process
+ * Maps the kernel stack pages into the Region 0 page table
+ *
+ * @param kernel_stack_pt Pointer to the kernel stack's page table
+ * @return 0 on success, -1 on failure
+ */
+int map_kernel_stack(pte_t *kernel_stack_pt);
+
+
 #endif /* _CONTEXT_SWITCH_H_ */

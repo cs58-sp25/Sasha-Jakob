@@ -38,7 +38,7 @@ typedef struct pcb {
 
     // Memory management
     pte_t region1_pt[MAX_PT_LEN];                            // Region 1 page table
-    unsigned int *kernel_stack_pages;                                  // Pointer to physical frames for kernel stack
+    pte_t *kernel_stack;                                  // Pointer to physical frames for kernel stack
     void *brk;                                                // Current program break (heap limit)
 
     // Process state

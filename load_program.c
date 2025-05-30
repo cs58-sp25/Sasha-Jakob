@@ -211,7 +211,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc)
   // Allocate and map text pages
   for (int i = text_pg1; i < text_pg1 + li.t_npg; i++)
   {
-    int frame = GetFrame();
+    int frame = allocate_frame();
     if (frame < 0)
     {
       for (int i = text_pg1; i < text_pg1 + li.t_npg; i++)
@@ -245,7 +245,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc)
   // Allocate and map data pages
   for (int i = data_pg1; i < data_pg1 + data_npg; i++)
   {
-    int frame = GetFrame();
+    int frame = allocate_frame();
     if (frame < 0)
     {
       for (int i = data_pg1; i < data_pg1 + data_npg; i++)
@@ -278,7 +278,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc)
   // Allocate and map stack pages
   for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++)
   {
-    int frame = GetFrame();
+    int frame = allocate_frame();
     if (frame < 0)
     {
       for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++)
