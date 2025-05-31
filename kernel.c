@@ -24,43 +24,6 @@
 #include "kernel.h"
 
 /* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/
-// void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
-
-//     // Print debug information about memory layout
-//     TracePrintf(0, "KernelStart: text start = 0x%x\n", _first_kernel_text_page);
-//     TracePrintf(0, "KernelStart: data start = 0x%x\n", _first_kernel_data_page);
-//     TracePrintf(0, "KernelStart: brk start = 0x%x\n", _orig_kernel_brk_page);
-
-//     trap_init(); // Initialize the interrupt vector table
-
-//     // Initialize the PCB system
-//     if (init_pcb_system() != 0) {
-//         TracePrintf(0, "ERROR: Failed to initialize PCB system\n");
-//         Halt(); // System cannot function without a PCB system; halt.
-//     }
-
-//     // Initialize page tables for Region 0 and initial kernel break
-//     init_region0_pageTable((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
-
-//     enable_virtual_memory(); // Enable virtual memory
-
-//     // Create the idle process
-//     pcb_t *idle_process = create_process(uctxt); // The uctxt parameter here is the initial UserContext provided by the hardware
-
-//     load_program(cmd_args[0], cmd_args, idle_process); // Load the initial program into the idle process
-
-//     // Set the idle process pcb values
-//     idle_process->user_context->sp = (void *)(VMEM_1_LIMIT - 4); // Set the stack pointer to the top of the kernel stack
-//     idle_process->user_context->pc = &DoIdle; // Set the program counter to the idle function
-
-//     current_process = idle_process; // Set the global 'current_process' to the newly created idle process
-//     uctxt->pc = &DoIdle; // Set the PC to the idle function
-//     uctxt->sp = (void *)(VMEM_1_LIMIT -4); // Set the stack pointer to the top of the kernel stack
-
-//     TracePrintf(0, "Leaving KernelStart, returning to idle process (PID %d)\n", idle_process->pid);
-//     return; // Return to user mode, entering the idle loop
-// }
-
 void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     TracePrintf(0, "KernelStart\n");
 
