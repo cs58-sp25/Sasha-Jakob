@@ -4,8 +4,9 @@
  * Description: Context switching implementation for Yalnix OS
  */
 
-#include "context_switch.h"
 #include <hardware.h>
+#include <stdbool.h>
+#include "context_switch.h"
 #include "kernel.h"
 #include "pcb.h"
 #include "memory.h"
@@ -23,6 +24,11 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
     memcpy(curr_proc->kernel_context, kc_in, sizeof(KernelContext));
     memcpy(next_proc->kernel_context, kc_in, sizeof(KernelContext));
     //next_proc->kernel_context = *kc_in;
+
+    if (next_proc->kc_on == false){
+        memcpy(next_proc->kernel_context, kc_in, sizeof(KernelContext));
+        next_proc->kc_on = true;
+    }
 
     // Update the global current_process variable
     current_process = next_proc;

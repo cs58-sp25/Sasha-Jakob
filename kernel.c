@@ -23,7 +23,6 @@
 #include "load_program.h"
 #include "kernel.h"
 
-
 /* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/
 void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     TracePrintf(0, "KernelStart\n");
@@ -99,7 +98,6 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         Halt();
     }
 
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
     TracePrintf(0, "Exiting KernelStart\n");
 }
 
