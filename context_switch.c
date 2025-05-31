@@ -33,9 +33,10 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
     WriteRegister(REG_PTLR1, MAX_PT_LEN);
 
     // Flush the TLB to ensure new mappings are used
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_KSTACK); // Flush all TLB entries for safety
 
     // Return a pointer to the KernelContext in the new PCB
+    TracePrintf(0, "Returning from KCSwitch\n");
     return next_proc->kernel_context;
 }
 
@@ -107,7 +108,6 @@ void remove_temp_mapping(void *addr) {
 }
 
 
-
 /**
  * @brief Maps the kernel stack of the current process (identified by its physical frames) into Region 0.
  *
@@ -121,7 +121,7 @@ void remove_temp_mapping(void *addr) {
 int map_kernel_stack(pte_t *kernel_stack_pt) {
     TracePrintf(1, "map_kernel_stack: Re-mapping kernel stack in Region 0.\n");
 
-    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE / PAGESIZE;
+    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE >> PAGESHIFT;
     void *kernel_stack_vaddr_start = (void *)KERNEL_STACK_BASE;
 
     for (int i = 0; i < num_kernel_stack_pages; i++) {
@@ -130,11 +130,11 @@ int map_kernel_stack(pte_t *kernel_stack_pt) {
         int pfn = src_pte->pfn; // Get the physical frame number from the source PTE
 
         // Map each physical frame of the new kernel stack to its corresponding
-        // virtual page in Region 0.
-        // Permissions: PROT_READ | PROT_WRITE for kernel stack.
-        map_page(region0_pt, (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT,
-                 pfn, PROT_READ | PROT_WRITE);
+        TracePrintf(0, "map_kernel_stack: Virtual page number is: %d\n", (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT);
+        map_page(region0_pt, (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
     }
+
+    TracePrintf(0, "Exit map_kernel_stack\n");
 
     return 0;
 }
