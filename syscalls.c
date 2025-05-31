@@ -4,6 +4,7 @@
 #include <hardware.h>
 
 #include "syscalls.h"
+#include "load_program.h"
 #include "context_switch.h"
 
 syscall_handler_t syscall_handlers[256]; // Array of trap handlers
