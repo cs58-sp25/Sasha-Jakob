@@ -706,7 +706,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
         pte_t entry = proc->region1_pt[i];
         entry.prot = PROT_READ | PROT_EXEC;
         // This operation has no effect if the page is not in the TLB, may be inefficient but oh well
-        WriteRegister(REG_TLB_FLUSH, i << PAGESHIFT);
+        WriteRegister(REG_TLB_FLUSH, (i + MAX_PT_LEN) << PAGESHIFT);
     }
 
     /*
