@@ -97,8 +97,8 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         TracePrintf(0, "KernelContextSwitch failed when copying idle into init\n");
         Halt();
     }
-
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+    
+    // This should never be reached
     TracePrintf(0, "Exiting KernelStart\n");
 }
 
