@@ -19,7 +19,7 @@ void trap_init(void) {
     trap_handlers[TRAP_TTY_TRANSMIT] = transmit_handler; // Terminal output complete
 
     // Write the address of vector table to REG_VECTOR_BASE register
-    WriteRegister(REG_VECTOR_BASE, (unsigned int)trap_handlers);
+    WriteRegister(REG_VECTOR_BASE, (void *)trap_handlers);
     TracePrintf(0, "Interrupt vector table initialized at 0x%p\n", trap_handlers);
     TracePrintf(1, "Exit trap_init.\n");
 }

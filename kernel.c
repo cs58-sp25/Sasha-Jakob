@@ -96,22 +96,25 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     WriteRegister(REG_PTBR1, (u_long)idle_pcb->region1_pt);  // Set base physical address of Region 1 page table (now a static array address)
     WriteRegister(REG_PTLR1, MAX_PT_LEN);                    // Set limit of Region 1 page table to 1 entry initially
 
-    // Set the global current_process to idle initially
-    current_process = idle_pcb;
-    idle_pcb->state = PROCESS_RUNNING;
+    idle_pcb->state = PROCESS_DEFAULT;
+    // Add the idle process to the ready queue
+    add_to_ready_queue(idle_pcb);
 
     // Determine the name of the initial program to load
     char *name = (cmd_args != NULL && cmd_args[0] != NULL) ? cmd_args[0] : "test/init";
     TracePrintf(0, "Creating init pcb with name %s\n", name);
 
     // Create the 'init' process PCB
-    pcb_t *init_pcb = create_pcb();
+    pcb_t *init_pcb = create_process();
     if (init_pcb == NULL) {
         TracePrintf(0, "ERROR: Failed to create init process PCB\n");
         Halt();
     }
     // Copy initial UserContext for init process from uctxt
     memcpy(init_pcb->user_context, uctxt, sizeof(UserContext));
+
+    current_process = init_pcb;
+    init_pcb->state = PROCESS_RUNNING;
     
     // Set hardware registers for Region 1 page table init_process
     WriteRegister(REG_PTBR1, (u_long)init_pcb->region1_pt);  // Set base physical address of Region 1 page table (now a static array address)
@@ -125,13 +128,10 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         Halt();
     }
 
-    // Set hardware registers for Region 1 page table
-    WriteRegister(REG_PTBR1, (u_long)init_pcb->region1_pt);  // Set base physical address of Region 1 page table (now a static array address)
-    WriteRegister(REG_PTLR1, MAX_PT_LEN);                    // Set limit of Region 1 page table to 1 entry initially
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
-
-    // Add the init process to the ready queue
-    add_to_ready_queue(init_pcb);
+    // // Set hardware registers for Region 1 page table
+    // WriteRegister(REG_PTBR1, (u_long)init_pcb->region1_pt);  // Set base physical address of Region 1 page table (now a static array address)
+    // WriteRegister(REG_PTLR1, MAX_PT_LEN);                    // Set limit of Region 1 page table to 1 entry initially
+    // WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
     TracePrintf(0, "KernelStart: Performing initial context switch from idle (PID %d) to init process (PID %d)\n", idle_pcb->pid, init_pcb->pid);
     // This call is correct, assuming KCSwitch is the proper function pointer for KernelContextSwitch.
