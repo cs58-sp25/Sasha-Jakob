@@ -14,8 +14,8 @@ Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 7 blocks allocated, 1916 bytes total
 Yalnix     KernelStart
 Yalnix     Enter trap_init.
-Hardware       | WriteRegister(REG_VECTOR_BASE,0x02dda0)
-Yalnix     Interrupt vector table initialized at 0x0x2dda0
+Hardware       | WriteRegister(REG_VECTOR_BASE,0x02dd60)
+Yalnix     Interrupt vector table initialized at 0x0x2dd60
 Yalnix     Exit trap_init.
 Yalnix     ENTER init_pcb_system.
 Yalnix     ENTER create_list.
@@ -46,7 +46,7 @@ Yalnix     EXIT init_pcb_system.
 Yalnix     Initializing page table...
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 12 blocks allocated, 4032 bytes total
-Yalnix     Region 0 page table base physical address: 0x2db80
+Yalnix     Region 0 page table base physical address: 0x2db40
 Yalnix     Kernel data/heap permission for page: 22 is 3
 Yalnix     Kernel data/heap permission for page: 23 is 3
 Yalnix     Kernel data/heap permission for page: 24 is 3
@@ -55,7 +55,7 @@ Yalnix     Kernel data/heap permission for page: 26 is 3
 Yalnix     Kernel data/heap permission for page: 27 is 3
 Yalnix     Kernel text, data, and heap initialized with 12 total entries
 Yalnix     Kernel stack initialized with 2 total entries
-Hardware       | WriteRegister(REG_PTBR0,0x02db80)
+Hardware       | WriteRegister(REG_PTBR0,0x02db40)
 Hardware       | WriteRegister(REG_PTLR0,0x000080)
 Hardware       | WriteRegister(REG_VM_ENABLE,0x000001)
 Hardware   Enabling VM
@@ -66,7 +66,7 @@ Hardware   initializing TLB to be empty
 Hardware   PhysLimit 38000, my_break 38000
 Hardware   clearing TLB
 Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x0, PTLR1 0x0
-Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2db80, PTLR0 0x80
+Hardware   FlushTLB(TLB_FLUSH_0): PTBR0 0x2db40, PTLR0 0x80
 Hardware   moving kernel text,data,heap into TLB
 Hardware   PageInTLB[16] addr 0x20000: 0 -> 1
 Hardware   PageInTLB[17] addr 0x22000: 0 -> 1
@@ -107,29 +107,85 @@ Hardware   Kernel heap usage: 18 blocks allocated, 5464 bytes total
 Yalnix     ENTER list_init.
 Yalnix     EXIT list_init.
 Yalnix     EXIT create_pcb.
+Yalnix     Enter LoadProgram.
 Yalnix     prog_size 4, text 2 data 2 bss 0 pages
 Yalnix     LoadProgram: heap_size 4, stack_size 1
 Hardware   Kernel heap OK.
 Hardware   Kernel heap usage: 19 blocks allocated, 5468 bytes total
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 4
-Yalnix     Mapping text page 0 to frame 4
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 5
-Yalnix     Mapping text page 1 to frame 5
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 6
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 7
-Yalnix     Enter allocate_frame()
-Yalnix     allocate_frame: Allocated frame 8
-Hardware       | WriteRegister(REG_TLB_FLUSH,TLB_FLUSH_1)
-Hardware   FlushTLB(TLB_FLUSH_1): PTBR1 0x31104, PTLR1 0x80
+Yalnix     Enter free_frame(16777215)
+Yalnix     free_frame: ERROR: Invalid physical frame number 16777215
+Yalnix     Enter free_frame(16777215)
+Yalnix     free_frame: ERROR: Invalid physical frame number 16777215
+Yalnix     Enter free_frame(16777215)
+Yalnix     free_frame: ERROR: Invalid physical frame number 16777215
+Yalnix     Enter free_frame(16777215)
+Yalnix     free_frame: ERROR: Invalid physical frame number 16777215
+Yalnix     Enter free_frame(16777215)
+Yalnix     free_frame: ERROR: Invalid physical frame number 16777215
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(16777215)
+Yalnix     free_frame: ERROR: Invalid physical frame number 16777215
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(4607045)
+Yalnix     free_frame: ERROR: Invalid physical frame number 4607045
+Yalnix     Enter free_frame(257)
+Yalnix     free_frame: ERROR: Invalid physical frame number 257
+Yalnix     Enter free_frame(0)
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(0)
+Yalnix     free_frame: WARNING: Attempted to free an already free frame 0
+Yalnix     Enter free_frame(6583525)
+Yalnix     free_frame: ERROR: Invalid physical frame number 6583525
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
+Yalnix     Enter free_frame(1044189)
+Yalnix     free_frame: ERROR: Invalid physical frame number 1044189
 Hardware   ========= Hardware receives signal ==============
 Hardware   FrameworkSignalHandler(11), depth 2
 Hardware   ----
 Hardware   | Trap Segmentation fault
-Hardware   | From usermode  SP [region 0] 0xff900 | PC [region 0] 0x265ad
+Hardware   | From usermode  SP [region 0] 0xff930 | PC [region 0] 0x25837
 Hardware   | pid 0 | PTBR1 0x031104 | kstack 126 127
 Hardware   The kernel has an unsresolved trap, depth = 2
 Hardware   | 

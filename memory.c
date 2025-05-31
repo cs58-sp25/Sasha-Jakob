@@ -32,7 +32,7 @@ int allocate_frame(void) {
 
 
 void free_frame(int pfn) {
-    TracePrintf(1, "Enter free_frame(%d)\n", pfn);
+    TracePrintf(1, "Enter free_frame() for physical page number %d\n", pfn);
     // Basic validation for the physical frame number
     if (pfn < 0 || pfn >= NUM_VPN) { // Assuming NUM_VPN is the total number of physical frames
         TracePrintf(0, "free_frame: ERROR: Invalid physical frame number %d\n", pfn);
