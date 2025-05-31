@@ -402,8 +402,6 @@
  * ==>> You might also want to save the original annotations as comments.
  */
 
-#include "load_program.h"
-
 #include <ctype.h>
 #include <fcntl.h>
 #include <hardware.h>
@@ -579,6 +577,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
         pte_t entry = proc->region1_pt[i];
         if (entry.valid) {
             // free the pfn
+            TracePrintf("Load_program: freeing physical frame corresponding to virtual page %d\n", i);
             int pfn = entry.pfn;
             free_frame(pfn);
             entry.pfn = 0;
@@ -730,5 +729,6 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     *cpp++ = NULL; /* the last argv is a NULL pointer */
     *cpp++ = NULL; /* a NULL pointer for an empty envp */
 
+    TracePrintf(0, "Load_program: returned from load program with success\n");
     return SUCCESS;
 }

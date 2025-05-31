@@ -1,7 +1,8 @@
 #include <yalnix.h>
 #include <yuser.h>
+#include <ctype.h>
+#include <hardware.h>
 
-#include "load_program.h"
 #include "syscalls.h"
 #include "context_switch.h"
 
