@@ -44,7 +44,7 @@ pcb_t *create_pcb(void) {
     new_pcb->pid = 0;
 
     // Set initial state
-    new_pcb->state = PROCESS_READY;
+    new_pcb->state = PROCESS_DEFAULT;
 
     // Zero out timers, exit code
     new_pcb->time_slice = DEFAULT_TIMESLICE;
