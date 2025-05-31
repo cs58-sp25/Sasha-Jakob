@@ -98,6 +98,9 @@ int SyncInitPipe(int *pipe_idp){
     return SUCCESS;
 }
 
+int SyncDestroyPipe(pipe_t *pipe){
+}
+
 // Does not wait to fill the entirety of the buffer
 // blocks if nothing is available
 // otherwise reads whatever is and returns
@@ -370,8 +373,10 @@ int SyncLockRelease(int lock_id){
     if(lock->waiters.count != 0){
         pcb_t *next = pcb_from_queue_node(pop(&lock->waiters));
         next->state = PROCESS_DEFAULT;
+        next->waiting_lock_id = -1;
 
         add_to_ready_queue(next);
+        lock->owner = next;
         TracePrintf(1, "Exit SyncLockRelease, the next process waiting was given the lock.\n");
         return SUCCESS;
     }
@@ -407,72 +412,180 @@ int SyncInitCvar(int *lock_idp){
     // Return the return of InitSyncObject and set the idp value to the returned id
     *lock_idp = rc;
     TracePrintf(1, "Exit SyncInitCvar.\n");
-    return SUCCESS;
+    return 0;
 
 }
 
 int SyncCvarWait(int cvar_id, int lock_id){
+    TracePrintf(1, "Enter SyncCvarWait.\n");
     // Check to see if the cvar is valid
-        // if it fails return error
+        // If not throw and error 
+    sync_obj_t *sync;
+    if (GetCheckSync(cvar_id, CVAR, &sync) == ERROR){
+        return ERROR;
+    } 
+    // Get the cvar
+    cvar_t *cvar = sync->object.cvar;
+
     // Check to see if the lock is valid
-        // if it fails return error
-    
-    // Grab the lock, cvar, and current process
+        // If not throw and error 
+    if (GetCheckSync(lock_id, LOCK, &sync) == ERROR){
+        return ERROR;
+    } 
+    // Get the lock
+    lock_t *lock = sync->object.lock;
+    pcb_t *curr = current_process;
+
     // Check to see if the current process owns the lock
-        // if it fails return error
+        // if it fails return error 
+    if(lock->owner != curr){
+        TracePrintf(1, "ERROR, lock %d is owned by process %d not process %d.\n", lock_id, lock->owner->pid, curr->pid);
+        return ERROR;
+    }
+
     // Release the lock as above, don't call release though since that would validate process and lock again
+    // Check if there are waiters
+        // If so give the lock to the next waiter
+        // null the waiter's waiting lock
+        // Set the next waiter to ready
+    if(lock->waiters.count != 0){
+        pcb_t *next = pcb_from_queue_node(pop(&lock->waiters));
+        next->state = PROCESS_DEFAULT;
+        next->waiting_lock_id = -1;
+
+        add_to_ready_queue(next);
+        lock->owner = next;
+              
+    } else {
+        lock->locked = false;
+        lock->owner = NULL;
+
+    }
+
     // Add the process to cvar's waiters
+    insert_tail(&cvar->waiters, &curr->queue_node);
     // Set the process's waiting cvar
-    // Context switch
-    // While lock is locked
-        // Add the pcb to the lock's queue
-        // Context Switch
+    curr->waiting_cvar_id = cvar_id;
+    curr->state = PROCESS_BLOCKED;
     
-    // Claim the lock when able
-    // return 0
+    TracePrintf(1, "Exit SyncCvarWait.\n");
+    return PCB_BLOCKED;
+    
 }
 
 int SyncCvarSignal(int cvar_id){
+    TracePrintf(1, "Enter SyncCvarSignal.\n");
     // Check to see if the cvar is valid
-        // if it fails return error
+        // If not throw and error 
+    sync_obj_t *sync;
+    if (GetCheckSync(cvar_id, CVAR, &sync) == ERROR){
+        return ERROR;
+    } 
+    // Get the cvar
+    cvar_t *cvar = sync->object.cvar;
 
-    // Grab the cvar
     // If the queue is empty return 0
+    if (cvar->waiters.count == 0){
+        TracePrintf(1, "Exit SyncCvarSignal.\n");
+        return 0;
+    }
 
     // Else pop the first waiter
+    pcb_t *next = pcb_from_queue_node(pop(&cvar->waiters));
+    TracePrintf(1, "Removing proccess %d from the waiters list of cvar %d.\n", next->pid, cvar_id);
+    next->waiting_cvar_id = -1;
+    
     // Add the waiter to ready
-    // return 0
+    next->state = PROCESS_DEFAULT;
+    add_to_ready_queue(next);
+    
+    TracePrintf(1, "Exit SyncCvarSignal.\n");
+    return 0;
 }
 
 int SyncCvarBroadcast(int cvar_id){
+    TracePrintf(1, "Enter SyncCvarBroadcast.\n");
     // Check to see if the cvar is valid
-        // if it fails return error
+        // If not throw and error 
+    sync_obj_t *sync;
+    if (GetCheckSync(cvar_id, CVAR, &sync) == ERROR){
+        return ERROR;
+    } 
+    // Get the cvar
+    cvar_t *cvar = sync->object.cvar;
     
-    // Grab the cvar
     // If the queue is empty return 0
+    if (cvar->waiters.count == 0){
+        TracePrintf(1, "Exit SyncCvarBroadcast.\n");
+        return 0;
+    }
+    
 
     // while the queue is not empty
         // pop the first waiter
         // add the waiter to ready
+    while(cvar->waiters.count != 0){
+        pcb_t *next = pcb_from_queue_node(pop(&cvar->waiters));
+        TracePrintf(1, "Removing proccess %d from the waiters list of cvar %d.\n", next->pid, cvar_id);
+        next->waiting_cvar_id = -1;
     
-    // return 0
+        // Add the waiter to ready
+        next->state = PROCESS_DEFAULT;
+        add_to_ready_queue(next);
+    
+    }
+    
+    TracePrintf(1, "Exit SyncCvarBroadcast.\n");
     
 }
 
 
 
 int SyncReclaimSync(int id){
+    TracePrintf(1, "Enter SyncReclaimSync.\n");
     // check if it's a valid id
         // if not return error
-    // get the object from the table
-        // if its invalid return error
-    // check to see if its one of the object type
-        // based on the object type, free what is necessary
-        // If it is somehow not a valid type return an error
-    // Free the sync object
-    // Set the sync table entry to NULL
-    // return 0
+    if (id < 0 || id >= MAX_SYNCS || sync_table[id] == NULL){
+        TracePrintf(1, "ERROR, invalid sync object ID %d.\n", id);
+        return ERROR;
+    }
 
+    // get the object from the table
+    sync_obj_t *sync = sync_table[id];
+    switch(sync->type){
+        case(PIPE):
+            pipe_t *pipe = sync->object.pipe;
+            // If these lists aren't empty the processes in the queue WILL break
+            clear_list(&pipe->readers);
+            clear_list(&pipe->writers);
+            free(pipe);
+            break;
+        case(LOCK):
+            lock_t *lock = sync->object.lock;
+            clear_list(&lock->waiters);
+            free(lock);
+            break;
+        case(CVAR):
+            cvar_t *cvar = sync->object.cvar;
+            clear_list(&cvar->waiters);
+            free(cvar);
+            break;
+        default:
+            // THIS SHOULD NEVER HAPPEN
+            TracePrintf(1,"Error, an invalid sync type has occured.\n");
+            return ERROR;
+
+    }
+    // Free the sync id
+    FreeID(id);
+    
+    // Set the sync table entry to NULL
+    sync_table[id] = NULL;
+    
+    // Free the sync object
+    free(sync);
+    TracePrintf(1, "Exit SyncReclaimSync.\n");
+    return SUCCESS;
 }
 
 int GetNewID(void){
