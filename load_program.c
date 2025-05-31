@@ -572,12 +572,13 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> for every valid page, free the pfn and mark the page invalid.
      */
     // Loop over the region 1 page table
+    TracePrintf(1, "Starting to free old region 1 page table.\n");
     for (int i = 0; i < MAX_PT_LEN; i++) {
         // Get the ith page table entry
         pte_t entry = proc->region1_pt[i];
         if (entry.valid) {
             // free the pfn
-            TracePrintf(0, "Load_program: freeing physical frame corresponding to virtual page %d\n", i);
+            TracePrintf(1, "Load_program: freeing physical frame corresponding to virtual page %d\n", i);
             int pfn = entry.pfn;
             free_frame(pfn);
             entry.pfn = 0;
@@ -598,25 +599,26 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> These pages should be marked valid, with a protection of
      * ==>> (PROT_READ | PROT_WRITE).
      */
+    
+    TracePrintf(1, "Allocating pages for physical text.\n");
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
-        pte_t entry = proc->region1_pt[i];
-        TracePrintf(0, "Load_program: Accessing pte %d\n", i);
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
         }
-        entry.valid = 1;
-        entry.prot = PROT_READ | PROT_WRITE;
-        entry.pfn = nf;
+        proc->region1_pt[i].valid = 1;
+        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;
+        proc->region1_pt[i].pfn = nf;
     }
-
     /*
      * ==>> Then, data. Allocate "data_npg" physical pages and map them starting at
      * ==>> the  "data_pg1" in region 1 address space.
      * ==>> These pages should be marked valid, with a protection of
      * ==>> (PROT_READ | PROT_WRITE)
      */
+
+    TracePrintf(1, "Allocating pages for data.\n");
     for (int i = data_pg1; i < data_pg1 + data_npg; i++) {
         pte_t entry = proc->region1_pt[i];
         TracePrintf(0, "Load_program: Accessing pte %d\n", i);
@@ -625,9 +627,9 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
         }
-        entry.valid = 1;
-        entry.prot = PROT_READ | PROT_WRITE;
-        entry.pfn = nf;
+        proc->region1_pt[i].valid = 1;
+        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;
+        proc->region1_pt[i].pfn = nf;
     }
 
     /*
@@ -636,6 +638,8 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> These pages should be marked valid, with a
      * ==>> protection of (PROT_READ | PROT_WRITE).
      */
+
+    TracePrintf(1, "Allocating pages for stack.\n");
     for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++) {
         pte_t entry = proc->region1_pt[i];
         TracePrintf(0, "Load_program: Accessing pte %d\n", i);
@@ -644,9 +648,9 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
         }
-        entry.valid = 1;
-        entry.prot = PROT_READ | PROT_WRITE;
-        entry.pfn = nf;
+        proc->region1_pt[i].valid = 1;
+        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;
+        proc->region1_pt[i].pfn = nf;
     }
 
     /*
@@ -663,9 +667,9 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     lseek(fd, li.t_faddr, SEEK_SET);
     segment_size = li.t_npg << PAGESHIFT;
-    TracePrintf(0, "Load_program: segment size for text to be written is: %d\n", segment_size);
-    TracePrintf(0, "Load_program: v_addr is: %p\n", (void *)li.t_vaddr);
-
+    TracePrintf(1, "%p.\n", proc->region1_pt[data_pg1].valid);
+    TracePrintf(1, "%p.\n", proc->region1_pt[data_pg1].prot);
+    TracePrintf(1, "%p.\n", proc->region1_pt[data_pg1].pfn);
     if (read(fd, (void *)li.t_vaddr, segment_size) != segment_size) {
         TracePrintf(0, "Load_program. ERROR failed to dowhatever the fuck read is supposed to do");
         close(fd);
@@ -678,16 +682,13 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     lseek(fd, li.id_faddr, 0);
     segment_size = li.id_npg << PAGESHIFT;
-    TracePrintf(0, "Load_program: Succesfully did lseek(fd, li.id_faddr, 0)\n");
-
+    
     if (read(fd, (void *)li.id_vaddr, segment_size) != segment_size) {
         close(fd);
         return KILL;
     }
 
     close(fd); /* we've read it all now */
-    TracePrintf(0, "Load_program: Succesfully read and closed file fd\n");
-
     /*
      * ==>> Above, you mapped the text pages as writable, so this code could write
      * ==>> the new text there.
@@ -699,6 +700,8 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> If any of these page table entries is also in the TLB,
      * ==>> you will need to flush the old mapping.
      */
+
+    TracePrintf(1, "Making text read and execute only.\n");
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
         pte_t entry = proc->region1_pt[i];
         entry.prot = PROT_READ | PROT_EXEC;
@@ -709,7 +712,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     /*
      * Zero out the uninitialized data area
      */
-    bzero(li.id_end, li.ud_end - li.id_end);
+    bzero((void *)li.id_end, li.ud_end - li.id_end);
     bzero((void *)li.id_end, li.ud_end - li.id_end);
 
     /*
