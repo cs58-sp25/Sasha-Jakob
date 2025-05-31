@@ -39,6 +39,8 @@ pcb_t *create_pcb(void) {
     } // If it failed return NULL
     
     new_pcb->user_context = malloc(sizeof(UserContext));
+    new_pcb->kernel_context = malloc(sizeof(KernelContext));
+    new_pcb->kc_on = false;
 
     // Assign unique PID
     new_pcb->pid = 0;

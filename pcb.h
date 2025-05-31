@@ -8,6 +8,7 @@
 #define _PCB_H_ 
 
 #include <hardware.h>
+#include <stdbool.h>
 #include <ylib.h>
 #include "list.h"
 
@@ -32,6 +33,7 @@ typedef struct pcb {
     // Process context
     UserContext *user_context;      // User context (saved registers, PC, etc.)
     KernelContext *kernel_context;  // Kernel context
+    bool kc_on; 
 
     // Process identification
     int pid;   // Process ID

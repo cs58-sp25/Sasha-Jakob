@@ -23,7 +23,6 @@
 #include "load_program.h"
 #include "kernel.h"
 
-
 /* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/
 void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     TracePrintf(0, "KernelStart\n");
@@ -98,8 +97,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         TracePrintf(0, "KernelContextSwitch failed when copying idle into init\n");
         Halt();
     }
-    
-    // This should never be reached
+
     TracePrintf(0, "Exiting KernelStart\n");
 }
 
