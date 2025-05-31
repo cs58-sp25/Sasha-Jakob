@@ -125,16 +125,7 @@ pcb_t *create_process(void) {
     int kernel_stack_end = KERNEL_STACK_LIMIT >> PAGESHIFT;
     int num_kernel_stack_frames = kernel_stack_end - kernel_stack_start;
 
-    // Set up kernel stack frames for this process
-    new_pcb->kernel_stack = malloc(num_kernel_stack_frames * sizeof(pte_t));
-    if (new_pcb->kernel_stack == NULL) {
-        TracePrintf(0, "ERROR: Failed to allocate space for kernel stack frames\n");
-        // Clean up previously allocated resources
-        free_frame(num_kernel_stack_frames);  // Free the user stack frame
-        free(new_pcb);
-        return NULL;
-    }
-
+    // Make the kernel stack
     new_pcb->kernel_stack = InitializeKernelStack();
 
     TracePrintf(1, "EXIT create_process. Created process with PID %d\n", new_pcb->pid);
