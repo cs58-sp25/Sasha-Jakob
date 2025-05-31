@@ -112,6 +112,11 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     }
     // Copy initial UserContext for init process from uctxt
     memcpy(init_pcb->user_context, uctxt, sizeof(UserContext));
+    
+    // Set hardware registers for Region 1 page table init_process
+    WriteRegister(REG_PTBR1, (u_long)init_pcb->region1_pt);  // Set base physical address of Region 1 page table (now a static array address)
+    WriteRegister(REG_PTLR1, MAX_PT_LEN);                    // Set limit of Region 1 page table to 1 entry initially
+
 
     // Load the 'init' program into the new 'init_process'
     int load_result = LoadProgram(name, cmd_args, init_pcb);

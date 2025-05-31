@@ -460,7 +460,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     if (LoadInfo(fd, &li) != LI_NO_ERROR) {
         TracePrintf(0, "LoadProgram: '%s' not in Yalnix format\n", name);
         close(fd);
-        return (-1);
+        return ERROR;
     }
 
     if (li.entry < VMEM_1_BASE) {
@@ -572,12 +572,12 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> for every valid page, free the pfn and mark the page invalid.
      */
     // Loop over the region 1 page table
-    for (int i = 0; i < VMEM_1_SIZE; i++) {
+    for (int i = 0; i < MAX_PT_LEN; i++) {
         // Get the ith page table entry
         pte_t entry = proc->region1_pt[i];
         if (entry.valid) {
             // free the pfn
-            TracePrintf("Load_program: freeing physical frame corresponding to virtual page %d\n", i);
+            TracePrintf(0, "Load_program: freeing physical frame corresponding to virtual page %d\n", i);
             int pfn = entry.pfn;
             free_frame(pfn);
             entry.pfn = 0;
@@ -600,6 +600,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
         pte_t entry = proc->region1_pt[i];
+        TracePrintf(0, "Load_program: Accessing pte %d\n", i);
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
@@ -614,10 +615,11 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> Then, data. Allocate "data_npg" physical pages and map them starting at
      * ==>> the  "data_pg1" in region 1 address space.
      * ==>> These pages should be marked valid, with a protection of
-     * ==>> (PROT_READ | PROT_WRITE).
+     * ==>> (PROT_READ | PROT_WRITE)
      */
     for (int i = data_pg1; i < data_pg1 + data_npg; i++) {
         pte_t entry = proc->region1_pt[i];
+        TracePrintf(0, "Load_program: Accessing pte %d\n", i);
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
@@ -636,6 +638,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++) {
         pte_t entry = proc->region1_pt[i];
+        TracePrintf(0, "Load_program: Accessing pte %d\n", i);
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
@@ -650,6 +653,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> (Finally, make sure that there are no stale region1 mappings left in the TLB!)
      */
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
+    TracePrintf(0, "Load_program: Succesfully write to register %d\n", REG_TLB_FLUSH);
     /*
      * All pages for the new address space are now in the page table.
      */
@@ -659,16 +663,22 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      */
     lseek(fd, li.t_faddr, SEEK_SET);
     segment_size = li.t_npg << PAGESHIFT;
+    TracePrintf(0, "Load_program: segment size for text to be written is: %d\n", segment_size);
+    TracePrintf(0, "Load_program: v_addr is: %p\n", (void *)li.t_vaddr);
+
     if (read(fd, (void *)li.t_vaddr, segment_size) != segment_size) {
+        TracePrintf(0, "Load_program. ERROR failed to dowhatever the fuck read is supposed to do");
         close(fd);
         return KILL;  // see ykernel.h
     }
+    TracePrintf(0, "Load_program: succesfully did read(fd, (void *)li.t_vaddr, segment_size)\n");
 
     /*
      * Read the data from the file into memory.
      */
     lseek(fd, li.id_faddr, 0);
     segment_size = li.id_npg << PAGESHIFT;
+    TracePrintf(0, "Load_program: Succesfully did lseek(fd, li.id_faddr, 0)\n");
 
     if (read(fd, (void *)li.id_vaddr, segment_size) != segment_size) {
         close(fd);
@@ -676,6 +686,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     }
 
     close(fd); /* we've read it all now */
+    TracePrintf(0, "Load_program: Succesfully read and closed file fd\n");
 
     /*
      * ==>> Above, you mapped the text pages as writable, so this code could write
