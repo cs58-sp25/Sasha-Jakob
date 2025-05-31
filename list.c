@@ -137,10 +137,44 @@ list_node_t *pop(list_t *list) {
 }
 
 list_node_t *peek(list_t *list){
+    TracePrintf(1, "Enter peek.\n");
     if(list_is_empty(list)){
         TracePrintf(1, "ERROR, The list was empty or the list didn't exist (last trace would clarify).\n");
         return NULL;
     }
-
+    
+    TracePrintf(1, "Exit peek.\n");
     return list->head.next;
+}
+
+int clear_list(list_t *list){
+    TracePrintf(1, "Enter clear_list.\n");
+    if(list == NULL){
+        TracePrintf(1, "ERROR, the list does not exist");
+        return ERROR;
+    }
+
+    while(list->count > 0){
+        list_node_t *popped = pop(list);
+        if(popped == NULL){
+            TracePrintf(1, "ERROR, a null spot in the list has been reached.\n");
+            return ERROR;
+        }
+    }
+    
+    TracePrintf(1, "Exit clear_list.\n");
+    return 0;
+}
+
+int destroy_list(list_t *list){
+    TracePrintf(1, "Enter destroy_list.\n");
+   
+    int rc = clear_list(list);
+    if (rc == ERROR){
+        return ERROR;
+    }
+
+    free(list);
+    TracePrintf(1, "Exit destroy_list.\n");
+    return 0;
 }
