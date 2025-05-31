@@ -20,9 +20,9 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
     TracePrintf(3, "KCSwitch: From PID %d to PID %d.\n", curr_proc ? curr_proc->pid : -1, next_proc->pid);
 
     // Copy the current KernelContext (kc_in) into the old PCB
-    if (curr_proc) {
-        curr_proc->kernel_context = kc_in;
-    }
+    memcpy(curr_proc->kernel_context, kc_in, sizeof(KernelContext));
+    memcpy(next_proc->kernel_context, kc_in, sizeof(KernelContext));
+    //next_proc->kernel_context = *kc_in;
 
     // Update the global current_process variable
     current_process = next_proc;
