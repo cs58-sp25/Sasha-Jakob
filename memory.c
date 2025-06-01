@@ -170,6 +170,7 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
         entry->valid = 1;
         if (vpn_index < kernel_data_start) {
             map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_EXEC);
+            TracePrintf(0, "Kernel text permission for page: %d is %d\n", vpn_index, entry->prot);
         } else {
             map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_WRITE);
             TracePrintf(0, "Kernel data/heap permission for page: %d is %d\n", vpn_index, entry->prot);
@@ -192,6 +193,7 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
             break;
         }
         map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_WRITE);
+        TracePrintf(0, "Kernel stack permission for page: %d is %d.\n", vpn_index, region0_pt[vpn_index].prot);
     }
     TracePrintf(0, "Kernel stack initialized with %d total entries\n", (KERNEL_STACK_LIMIT - KERNEL_STACK_BASE) / PAGESIZE);
 
