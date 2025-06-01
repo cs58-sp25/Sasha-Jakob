@@ -15,6 +15,9 @@ void *user_brk = NULL;    // Current user break address
 int *frame_bitMap;      // Bitmap to track free/used frames
 pte_t region0_pt[MAX_PT_LEN]; // Page table for Region 0
 
+void cpyuc(UserContext *dest, UserContext *src){
+    memcpy(dest, src, sizeof(UserContext));
+}
 
 int allocate_frame(void) {
     TracePrintf(1, "Enter allocate_frame()\n");
@@ -211,18 +214,39 @@ void enable_virtual_memory(void) {
 }
 
 pte_t *InitializeKernelStack(){
-  pte_t *kernel_stack = (pte_t *)malloc((KERNEL_STACK_MAXSIZE / PAGESIZE) * sizeof(pte_t));
-  if (kernel_stack == NULL){
-    TracePrintf(0, "Failed to allocate kernel stack\n");
-    Halt();
-  }
+    TracePrintf(1, "Enter InitializeKernelStack.\n");
+    pte_t *kernel_stack = (pte_t *)malloc((KERNEL_STACK_MAXSIZE >> PAGESHIFT) * sizeof(pte_t));
+    
+    if (kernel_stack == NULL){
+        TracePrintf(0, "Failed to allocate kernel stack\n");
+        Halt();
+    }
+    // if virtual memory is not enabled, just use physical memory, THIS SHOULD ONLY EVER HAPPEN ONCE
+    if(vm_enabled == 0){ 
+        TracePrintf(1, "Allocating Kernel Stack using physical pages.\n");
+        for (int j = 0; j < KERNEL_STACK_MAXSIZE >> PAGESHIFT; j++){
+            int vpn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
+            map_page(kernel_stack, vpn, vpn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
+        }
 
-  for (int j = 0; j < (KERNEL_STACK_MAXSIZE / PAGESIZE); j++){
-    int vpage = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
-    int pfn = allocate_frame();
-    map_page(kernel_stack, vpage, pfn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
-  }
-  return kernel_stack;
+    }
+
+    // if virtual memory is enabled allocate a new frame to use
+    if(vm_enabled == 1){
+        TracePrintf(1, "Allocating Kernel Stack using virtual pages.\n");
+        for (int j = 0; j < KERNEL_STACK_MAXSIZE >> PAGESHIFT; j++){
+            int vpn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
+            int pfn = allocate_frame();
+            if(pfn == ERROR){
+                TracePrintf(0, "ERROR failed to allocate a frame");
+                Halt();
+            }
+            map_page(kernel_stack, vpn, pfn, PROT_READ | PROT_WRITE); // Map the kernel stack page to the given frame
+        }
+    }
+
+    TracePrintf(1, "Exit InitializeKernelStack.\n");
+    return kernel_stack;
 }
 
 

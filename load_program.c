@@ -260,8 +260,10 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     /*
      * Read the text from the file into memory.
      */
+    TracePrintf(1, "Reading the text into memory.\n");
     lseek(fd, li.t_faddr, SEEK_SET);
     segment_size = li.t_npg << PAGESHIFT;
+    
     if (read(fd, (void *)li.t_vaddr, segment_size) != segment_size) {
         TracePrintf(0, "Load_program. ERROR failed to do whatever read is supposed to do");
         close(fd);
@@ -271,6 +273,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     /*
      * Read the data from the file into memory.
      */
+    TracePrintf(1, "Reading the data into memory.\n");
     lseek(fd, li.id_faddr, 0);
     segment_size = li.id_npg << PAGESHIFT;
     

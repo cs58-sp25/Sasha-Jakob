@@ -3,11 +3,12 @@
  * File: pcb.c
  * Description: PCB implementation for Yalnix OS
  */
-
+#include <ykernel.h>
 #include "pcb.h"
 
 /* -------------------------------------------------------------- Define Global Variables -------------------------------------------------- */
 pcb_t *current_process = NULL;
+pcb_t *idle_process = NULL;
 list_t *ready_queue;
 list_t *delay_queue;
 list_t *blocked_queue;
@@ -40,7 +41,6 @@ pcb_t *create_pcb(void) {
     
     new_pcb->user_context = malloc(sizeof(UserContext));
     new_pcb->kernel_context = malloc(sizeof(KernelContext));
-    new_pcb->kc_on = false;
 
     // Assign unique PID
     new_pcb->pid = 0;
@@ -60,15 +60,14 @@ pcb_t *create_pcb(void) {
     new_pcb->waiting_for_children = 0;
 
     // Initialize region 1 page table as invalid
-    for (int i = 0; i < MAX_PT_LEN; i++) {
-        new_pcb->region1_pt[i].valid = 0;
-        new_pcb->region1_pt[i].prot = 0;
-        new_pcb->region1_pt[i].pfn = 0;
-    }
+    new_pcb->region1_pt = (pte_t *)calloc(MAX_PT_LEN, sizeof(pte_t));
     
+    // Assign a pid to the process
+    new_pcb->pid = helper_new_pid(new_pcb->region1_pt);
+ 
+    // All of these start unitialized
     new_pcb->brk = NULL;
-    // These should all be set by the calling function, idk how memory works
-
+    
     new_pcb->tty_read_buffer = NULL;
     new_pcb->tty_read_len = 0;
     new_pcb->tty_read_terminal = -1;

@@ -17,6 +17,7 @@ extern void *user_brk;    // Current user break address
 extern int *frame_bitMap;      // Bitmap to track free/used frames
 extern pte_t region0_pt[]; // Page table for Region 0
 
+void cpyuc(UserContext *dest, UserContext *src);
 
 /**
  * @brief Allocate a free physical frame

@@ -22,24 +22,19 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
 
     // Copy the current KernelContext (kc_in) into the old PCB
     memcpy(curr_proc->kernel_context, kc_in, sizeof(KernelContext));
-    memcpy(next_proc->kernel_context, kc_in, sizeof(KernelContext));
-    //next_proc->kernel_context = *kc_in;
-
-    if (next_proc->kc_on == false){
-        memcpy(next_proc->kernel_context, kc_in, sizeof(KernelContext));
-        next_proc->kc_on = true;
-    }
-
-    // Update the global current_process variable
+    
+    // Set the next process
     current_process = next_proc;
+    next_proc->state = PROCESS_RUNNING;
+    
+    // Update the global current_process variable
     map_kernel_stack(next_proc->kernel_stack);
 
     // Change Region 1 Page Table Base Register (REG_PTBR1) to the new PCB's Region 1 page table
     WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
-    WriteRegister(REG_PTLR1, MAX_PT_LEN);
 
     // Flush the TLB to ensure new mappings are used
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_KSTACK); // Flush all TLB entries for safety
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
 
     // Return a pointer to the KernelContext in the new PCB
     TracePrintf(0, "Returning from KCSwitch\n");
@@ -47,14 +42,14 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
 }
 
 
-KernelContext *KCCopy(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
+KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
 
-    pcb_t *new_proc = (pcb_t *)next_pcb_p;
+    pcb_t *new_proc = (pcb_t *)new_pcb_p;
     TracePrintf(1, "KCCopy: Setting up kernel context for PID %d.\n", new_proc->pid);
 
     // Save the incoming KernelContext (kc_in) into the new PCB's kernel_context field.
     // This kc_in contains the state of the caller function just before KernelContextSwitch was invoked.
-    new_proc->kernel_context = kc_in;
+    memcpy(new_proc->kernel_context, kc_in, sizeof(KernelContext));
 
     int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE / PAGESIZE;
     char *current_kernel_stack_base = (char *)KERNEL_STACK_BASE;
@@ -80,7 +75,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) 
         // Remove the temporary mapping after copying
         remove_temp_mapping(mapped_dest_addr);
     }
-    return new_proc->kernel_context;
+    return kc_in;
 }
 
 

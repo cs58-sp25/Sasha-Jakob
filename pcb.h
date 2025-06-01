@@ -33,13 +33,12 @@ typedef struct pcb {
     // Process context
     UserContext *user_context;      // User context (saved registers, PC, etc.)
     KernelContext *kernel_context;  // Kernel context
-    bool kc_on; 
 
     // Process identification
     int pid;   // Process ID
 
     // Memory management
-    pte_t region1_pt[MAX_PT_LEN];                            // Region 1 page table
+    pte_t *region1_pt;                            // Region 1 page table
     pte_t *kernel_stack;                                  // Pointer to physical frames for kernel stack
     void *brk;                                                // Current program break (heap limit)
 
@@ -100,6 +99,7 @@ extern list_t *delay_queue;      // Processes waiting for Delay
 extern list_t *blocked_queue;    // Processes blocking for some other reasons
 extern list_t *zombie_queue;     // Terminated but not reaped processes
 extern pcb_t *current_process;  // Currently executing process
+extern pcb_t *idle_process;
 
 /**
  * Initialize PCB subsystem

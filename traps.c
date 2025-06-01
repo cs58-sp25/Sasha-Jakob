@@ -130,5 +130,5 @@ void transmit_handler(UserContext* cont){
 }
 
 static void other(void){
-    TracePrintf(1, "An unimplemented trap has occured");
+    TracePrintf(1, "An unimplemented trap has occured.\n");
 }
