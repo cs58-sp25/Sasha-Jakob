@@ -11,7 +11,6 @@
 #include "pcb.h"
 #include "memory.h"
 
-#define TEMP_MAPPING_VADDR (void *)(KERNEL_STACK_BASE - PAGESIZE)
 
 
 KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
@@ -56,25 +55,22 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
 
     for (int i = 0; i < num_kernel_stack_pages; i++) {
         // Get the physical frame number (PFN) for the corresponding page in the new kernel stack's page table.
-        // The `kernel_stack` field in pcb_t is `pte_t *`, which is the base of the kernel stack's page table.
-        // We need the PFN from this page table entry.
         pte_t *new_stack_pte = new_proc->kernel_stack + i; // Assuming contiguous PTEs for kernel stack in new_proc->kernel_stack
         int dest_pfn = new_stack_pte->pfn;
 
         // Temporarily map the destination frame into Region 0 for copying.
-        void *mapped_dest_addr = setup_temp_mapping(dest_pfn);
-        if (mapped_dest_addr == NULL) {
-            TracePrintf(0, "ERROR: KCCopy: Failed to set up temporary mapping for frame %d.\n", dest_pfn);
-            // Return NULL to indicate failure to KernelContextSwitch
-            return NULL;
-        }
+        setup_temp_mapping(dest_pfn);
 
         // Copy contents of the current kernel stack page to the temporarily mapped destination
-        memcpy(mapped_dest_addr, current_kernel_stack_base + (i * PAGESIZE), PAGESIZE);
+        memcpy((void *)TEMP_MAPPING_VADDR, (void *)((KSTACK_START_PAGE + i) << PAGESHIFT), PAGESIZE);
 
         // Remove the temporary mapping after copying
-        remove_temp_mapping(mapped_dest_addr);
+        remove_temp_mapping();
+        new_stack_pte->valid = 1;
+        new_stack_pte->prot = PROT_READ | PROT_WRITE;
     }
+
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_KSTACK);
     return kc_in;
 }
 
@@ -84,13 +80,10 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
  * @param pfn The physical frame number to map.
  * @return The virtual address where the frame is mapped, or NULL on error.
  */
-void *setup_temp_mapping(int pfn) {
+void setup_temp_mapping(int pfn) {
     TracePrintf(1, "setup_temp_mapping: Mapping PFN %d to temporary address %p.\n", pfn, TEMP_MAPPING_VADDR);
-
-    map_page(region0_pt, (int)TEMP_MAPPING_VADDR >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
-    WriteRegister(REG_TLB_FLUSH, (unsigned long)TEMP_MAPPING_VADDR); // Flush specific TLB entry
-
-    return TEMP_MAPPING_VADDR;
+    map_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
+    WriteRegister(REG_TLB_FLUSH, TEMP_MAPPING_VADDR); // Flush specific TLB entry
 }
 
 
@@ -99,13 +92,10 @@ void *setup_temp_mapping(int pfn) {
  * @brief Removes a temporary mapping from Region 0.
  * @param addr The virtual address of the temporary mapping to remove.
  */
-void remove_temp_mapping(void *addr) {
-    TracePrintf(1, "remove_temp_mapping: Unmapping address %p.\n", addr);
+void remove_temp_mapping(void) {
+    TracePrintf(1, "remove_temp_mapping: Unmapping address %p.\n", TEMP_MAPPING_VADDR);
     // Invalidate the PTE for the given virtual address 'addr' in region0_pt.
-    // Flush the TLB entry for that virtual page.
-
-    unmap_page(region0_pt, (int)addr >> PAGESHIFT);
-    WriteRegister(REG_TLB_FLUSH, (unsigned long)addr); // Flush specific TLB entry
+    unmap_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT);
 }
 
 

@@ -57,38 +57,56 @@ int SetKernelBrk(void *addr) {
     TracePrintf(1, "SetKernelBrk: Called with addr=%p, current kernel_brk=%p, vm_enabled=%d\n",
                 addr, kernel_brk, vm_enabled);
 
+    // Calculate page numbers for the requested address and current kernel break
+    unsigned int new_brk_page = ADDR_TO_PAGE_NUM(addr);
+    unsigned int current_kernel_brk_page = ADDR_TO_PAGE_NUM(kernel_brk);
+
+    // Calculate page numbers for the heap boundaries
+    unsigned int first_kernel_data_page_num = ADDR_TO_PAGE_NUM(_first_kernel_data_page);
+    unsigned int kernel_heap_max_page_num = ADDR_TO_PAGE_NUM(KERNEL_STACK_BASE);
+
     // Validate the requested address: Must be within Region 0 and not conflict with stack.
-    if (addr < (void*)_first_kernel_data_page || addr >= (void *)KERNEL_STACK_BASE) { // Assuming _first_kernel_data_page is the lower bound.
-        TracePrintf(0, "SetKernelBrk: ERROR: Requested address %p out of bounds for kernel heap (min %p, max %p)\n",
-                    addr, (void*)_first_kernel_data_page, (void *)KERNEL_STACK_BASE);
+    if (new_brk_page < first_kernel_data_page_num) {
+        TracePrintf(0, "SetKernelBrk: ERROR: Requested address %p (page %d) is below initial kernel heap start %p (page %d).\n",
+                    addr, new_brk_page, _first_kernel_data_page, first_kernel_data_page_num);
         return ERROR;
     }
 
     if (!vm_enabled) {
         // Before VM enabled: just track the kernel break within its valid range
-        // We only allow increasing the break, as deallocation isn't managed here
-        if (addr > kernel_brk) {
-            kernel_brk = addr;
-            return 0;
-        } else if (addr == kernel_brk) {
-            return 0; // No change
-        } else {
-            TracePrintf(0, "SetKernelBrk: ERROR: Cannot decrease kernel break before VM is enabled.\n");
-            return ERROR; // Disallow decreasing break before VM enabled for simplicity.
+        if (new_brk_page >= kernel_heap_max_page_num) {
+             TracePrintf(0, "SetKernelBrk: ERROR: Requested address %p (page %d) would overlap kernel stack %p (page %d) before VM enabled.\n",
+                         addr, new_brk_page, KERNEL_STACK_BASE, kernel_heap_max_page_num);
+             return ERROR;
         }
+
+        if (addr < kernel_brk) {
+            TracePrintf(0, "SetKernelBrk: ERROR: Cannot decrease kernel break before VM is enabled (requested %p, current %p).\n", addr, kernel_brk);
+            return ERROR;
+        }
+
+        // If increasing or equal, we just acknowledge the request for now.
+        TracePrintf(1, "SetKernelBrk: Pre-VM brk tracking: new_brk_page=%d (addr=%p), current_kernel_brk_page=%d (current_brk=%p)\n",
+                    new_brk_page, addr, current_kernel_brk_page, kernel_brk);
+        kernel_brk = addr; // Keep this consistent with the final assignment outside the VM check
+        return 0;
     } else {
         // After VM enabled: need to actually allocate/deallocate frames and update page tables.
-        void *old_brk_page_aligned = (void *)(UP_TO_PAGE(kernel_brk) * PAGESIZE); // Current heap end, page-aligned
-        void *new_brk_page_aligned = (void *)(UP_TO_PAGE(addr) * PAGESIZE);       // Requested heap end, page-aligned
+
+        // Check if the new break would overlap the kernel stack
+        if (new_brk_page >= kernel_heap_max_page_num) {
+            TracePrintf(0, "SetKernelBrk: ERROR: Requested address %p (page %d) would overlap kernel stack %p (page %d).\n",
+                        addr, new_brk_page, KERNEL_STACK_BASE, kernel_heap_max_page_num);
+            return ERROR;
+        }
 
         // If decreasing break, deallocate pages and update PTEs
-        if (new_brk_page_aligned < old_brk_page_aligned) {
-            TracePrintf(1, "SetKernelBrk: Decreasing kernel heap from %p to %p\n", old_brk_page_aligned, new_brk_page_aligned);
-            for (void *p = new_brk_page_aligned; p < old_brk_page_aligned; p += PAGESIZE) {
-                int vpn = (int)p >> PAGESHIFT; // Virtual page number
-
-                // Get the PTE for this page
-                pte_t *current_pte = region0_pt + vpn; // Assumes region0_pt is kernel-mapped pointer
+        if (new_brk_page < current_kernel_brk_page) {
+            TracePrintf(1, "SetKernelBrk: Decreasing kernel heap from page %d to page %d\n",
+                        current_kernel_brk_page, new_brk_page);
+            for (unsigned int i = new_brk_page; i < current_kernel_brk_page; i++) {
+                pte_t *current_pte = region0_pt + i; // Get the PTE for this virtual page
+                void *page_addr = PAGE_NUM_TO_ADDR(i); // Virtual address of the page
 
                 if (current_pte->valid) { // Check if the page was valid before attempting to free
                     int pfn_to_free = current_pte->pfn;
@@ -100,42 +118,54 @@ int SetKernelBrk(void *addr) {
                     current_pte->prot = 0;
                     current_pte->pfn = 0; // Clear PFN
                 } else {
-                    TracePrintf(0, "SetKernelBrk: WARNING: Attempted to deallocate unmapped page %p\n", p);
+                    TracePrintf(0, "SetKernelBrk: WARNING: Attempted to deallocate unmapped page %p (VPN %d)\n", page_addr, i);
                 }
 
                 // Flush the TLB for this page to invalidate the old mapping
-                WriteRegister(REG_TLB_FLUSH, (unsigned int)p);
+                WriteRegister(REG_TLB_FLUSH, (unsigned int)page_addr);
+                TracePrintf(1, "SetKernelBrk: Deallocated kernel heap page %p (VPN %d)\n", page_addr, i);
             }
         }
-        
-        else if (new_brk_page_aligned > old_brk_page_aligned) { // If increasing break, map new frames
-            TracePrintf(1, "SetKernelBrk: Increasing kernel heap from %p to %p\n", old_brk_page_aligned, new_brk_page_aligned);
-            for (void *p = old_brk_page_aligned; p < new_brk_page_aligned; p += PAGESIZE) {
-                int vpn = (int)p >> PAGESHIFT; // Virtual page number
+        // If increasing break, allocate and map new frames
+        else if (new_brk_page > current_kernel_brk_page) {
+            TracePrintf(1, "SetKernelBrk: Increasing kernel heap from page %d to page %d\n",
+                        current_kernel_brk_page, new_brk_page);
+            for (unsigned int i = current_kernel_brk_page; i < new_brk_page; i++) {
+                void *page_addr = PAGE_NUM_TO_ADDR(i); // Virtual address of the page
+
+                // Re-check stack boundary inside loop for incremental expansion safety
+                if (i >= kernel_heap_max_page_num) {
+                    TracePrintf(0, "SetKernelBrk: ERROR: Reached stack boundary during heap expansion at page %d (%p).\n", i, page_addr);
+                    return ERROR;
+                }
 
                 int pfn = allocate_frame(); // Get a free physical frame
                 if (pfn == ERROR) {
-                    TracePrintf(0, "SetKernelBrk: ERROR: Out of physical memory when expanding kernel heap at %p\n", p);
+                    TracePrintf(0, "SetKernelBrk: ERROR: Out of physical memory when expanding kernel heap at page %d (%p)\n", i, page_addr);
+                    // Similar to above, should ideally free frames allocated in this call if failure
                     return ERROR;
                 }
                 frame_bitMap[pfn] = 1; // Mark as used in bitmap
 
                 // Update the page table entry for this virtual page
-                pte_t *current_pte = region0_pt + vpn; // Assumes region0_pt is kernel-mapped pointer
+                pte_t *current_pte = region0_pt + i;
                 current_pte->valid = 1;
-                // Kernel heap needs read/write. If you have executable code on heap, add PROT_EXEC.
+                // Kernel heap needs read/write.
                 current_pte->prot = PROT_READ | PROT_WRITE;
                 current_pte->pfn = pfn;
 
                 // Flush the TLB for this page
-                WriteRegister(REG_TLB_FLUSH, (unsigned int)p);
-                TracePrintf(1, "SetKernelBrk: Mapped kernel heap page %p (VPN %d) to PFN %d\n", p, vpn, pfn);
+                WriteRegister(REG_TLB_FLUSH, (unsigned int)page_addr);
+                TracePrintf(1, "SetKernelBrk: Mapped kernel heap page %p (VPN %d) to PFN %d\n", page_addr, i, pfn);
             }
         }
-        kernel_brk = addr;
-        TracePrintf(1, "SetKernelBrk: Updated kernel_brk to %p\n", kernel_brk);
-        return 0;
+        // If new_brk_page == current_kernel_brk_page, no action needed, just fall through.
     }
+
+    // Update the global kernel_brk to the new requested address
+    kernel_brk = addr;
+    TracePrintf(1, "SetKernelBrk: Updated kernel_brk to %p\n", kernel_brk);
+    return 0;
 }
 
 
@@ -148,8 +178,6 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
     if (frame_bitMap == NULL) {
         TracePrintf(0, "ERROR: Failed to allocate frame_bitMap\n");
     }
-
-    TracePrintf(0, "Region 0 page table base physical address: %p\n", region0_pt);
 
     // Initialize all entries in the Region 0 page table to invalid.
     for (int i = 0; i < MAX_PT_LEN; i++) {
@@ -173,10 +201,8 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
         entry->valid = 1;
         if (vpn_index < kernel_data_start) {
             map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_EXEC);
-            TracePrintf(0, "Kernel text permission for page: %d is %d\n", vpn_index, entry->prot);
         } else {
             map_page(region0_pt, vpn_index, vpn_index, PROT_READ | PROT_WRITE);
-            TracePrintf(0, "Kernel data/heap permission for page: %d is %d\n", vpn_index, entry->prot);
         }
     }
     TracePrintf(0, "Kernel text, data, and heap initialized with %d total entries\n", kernel_brk_start - kernel_text_start);
@@ -221,26 +247,17 @@ pte_t *InitializeKernelStack(){
         TracePrintf(0, "Failed to allocate kernel stack\n");
         Halt();
     }
-    // if virtual memory is not enabled, just use physical memory, THIS SHOULD ONLY EVER HAPPEN ONCE
-    if(vm_enabled == 0){ 
-        TracePrintf(1, "Allocating Kernel Stack using physical pages.\n");
-        for (int j = 0; j < KERNEL_STACK_MAXSIZE >> PAGESHIFT; j++){
-            int vpn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
-            map_page(kernel_stack, vpn, vpn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
-        }
-
-    }
 
     // if virtual memory is enabled allocate a new frame to use
     if(vm_enabled == 1){
-        TracePrintf(1, "Allocating Kernel Stack using virtual pages.\n");
-        for (int j = 0; j < KERNEL_STACK_MAXSIZE >> PAGESHIFT; j++){
-            int vpn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
+        for (int vpn = 0; vpn < KERNEL_STACK_MAXSIZE >> PAGESHIFT; vpn++){
+            // kernel stack only has 2 entries!!!!!!!
             int pfn = allocate_frame();
             if(pfn == ERROR){
                 TracePrintf(0, "ERROR failed to allocate a frame");
                 Halt();
             }
+            TracePrintf(0, "InitializeKernelStack: VM enabled and mapping vpn %d to pfn %d\n", vpn, pfn);
             map_page(kernel_stack, vpn, pfn, PROT_READ | PROT_WRITE); // Map the kernel stack page to the given frame
         }
     }

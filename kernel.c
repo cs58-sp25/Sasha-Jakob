@@ -87,6 +87,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         Halt();
     }
 
+    TracePrintf(0, "Initializing kernelStack for INIT_PCB\n");
     init_pcb->kernel_stack = InitializeKernelStack();
     cpyuc(init_pcb->user_context, uctxt);
 
@@ -106,7 +107,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
     add_to_ready_queue(init_pcb);
-    cpyuc(uctxt, idle_pcb->user_context);
+    cpyuc(uctxt, init_pcb->user_context);
     current_process = idle_pcb;
     idle_pcb->state = PROCESS_RUNNING;
 

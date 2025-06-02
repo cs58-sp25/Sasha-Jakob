@@ -17,6 +17,9 @@ extern void *user_brk;    // Current user break address
 extern int *frame_bitMap;      // Bitmap to track free/used frames
 extern pte_t region0_pt[]; // Page table for Region 0
 
+#define ADDR_TO_PAGE_NUM(addr) ((unsigned int)(addr) >> PAGESHIFT)
+#define PAGE_NUM_TO_ADDR(page_num) ((void *)((unsigned int)(page_num) << PAGESHIFT))
+
 void cpyuc(UserContext *dest, UserContext *src);
 
 /**

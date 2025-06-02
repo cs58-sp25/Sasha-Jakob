@@ -196,7 +196,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> (PROT_READ | PROT_WRITE).
      */
     
-    TracePrintf(1, "Allocating pages for physical text.\n");
+    TracePrintf(1, "Load_program: Allocating pages for physical text.\n");
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
         int nf = allocate_frame();
         if (nf == ERROR) {
@@ -214,10 +214,9 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> (PROT_READ | PROT_WRITE)
      */
 
-    TracePrintf(1, "Allocating pages for data.\n");
+    TracePrintf(1, "Load_program: Allocating pages for data.\n");
     for (int i = data_pg1; i < data_pg1 + data_npg; i++) {
         pte_t entry = proc->region1_pt[i];
-        TracePrintf(0, "Load_program: Accessing pte %d\n", i);
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
@@ -235,10 +234,9 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> protection of (PROT_READ | PROT_WRITE).
      */
 
-    TracePrintf(1, "Allocating pages for stack.\n");
+    TracePrintf(1, "Load_program: Allocating pages for stack.\n");
     for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++) {
         pte_t entry = proc->region1_pt[i];
-        TracePrintf(0, "Load_program: Accessing pte %d\n", i);
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
@@ -260,7 +258,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     /*
      * Read the text from the file into memory.
      */
-    TracePrintf(1, "Reading the text into memory.\n");
+    TracePrintf(1, "Load_program: Reading the text into memory.\n");
     lseek(fd, li.t_faddr, SEEK_SET);
     segment_size = li.t_npg << PAGESHIFT;
     
@@ -273,7 +271,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     /*
      * Read the data from the file into memory.
      */
-    TracePrintf(1, "Reading the data into memory.\n");
+    TracePrintf(1, "Load_program: Reading the data into memory.\n");
     lseek(fd, li.id_faddr, 0);
     segment_size = li.id_npg << PAGESHIFT;
     
@@ -295,12 +293,12 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> you will need to flush the old mapping.
      */
 
-    TracePrintf(1, "Making text read and execute only.\n");
+    TracePrintf(1, "Load_program: Making text read and execute only.\n");
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
         pte_t entry = proc->region1_pt[i];
         entry.prot = PROT_READ | PROT_EXEC;
         // This operation has no effect if the page is not in the TLB, may be inefficient but oh well
-        WriteRegister(REG_TLB_FLUSH, (i + MAX_PT_LEN) << PAGESHIFT);
+        WriteRegister(REG_TLB_FLUSH, (unsigned int)VMEM_1_BASE + (i << PAGESHIFT));
     }
 
     /*

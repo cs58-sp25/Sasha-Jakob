@@ -10,6 +10,9 @@
 #include <hardware.h>
 #include "kernel.h"
 
+#define TEMP_MAPPING_VADDR (KERNEL_STACK_BASE - PAGESIZE)
+#define KSTACK_START_PAGE (KERNEL_STACK_BASE >> PAGESHIFT)
+
 /**
  * Function type for kernel context switch functions
  * Used with KernelContextSwitch
@@ -63,7 +66,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used);
  * @param frame Physical frame to map
  * @return Virtual address of temporary mapping, or NULL on failure
  */
-void *setup_temp_mapping(int frame);
+void setup_temp_mapping(int frame);
 
 
 /**
@@ -72,7 +75,7 @@ void *setup_temp_mapping(int frame);
  *
  * @param addr Virtual address to unmap
  */
-void remove_temp_mapping(void *addr);
+void remove_temp_mapping(void);
 
 
 /**
