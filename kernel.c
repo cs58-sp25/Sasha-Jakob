@@ -23,6 +23,8 @@
 #include "load_program.h"
 #include "kernel.h"
 
+static int switch_flag = 0;
+
 /* ------------------------------------------------------------------ Kernel Start --------------------------------------------------------*/
 
 void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
@@ -48,10 +50,10 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         Halt();
     }
 
-    // Set all of doidle's pages to invalid
-    for(int i=0; i<MAX_PT_LEN; i++){
-        idle_pcb->region1_pt[i].valid = 0;
-    }
+    // // Set all of doidle's pages to invalid
+    // for(int i=0; i<MAX_PT_LEN; i++){
+    //     idle_pcb->region1_pt[i].valid = 0;
+    // }
     
     // Attempt to get a frame for a location to put doidle
     int pfn = allocate_frame();
@@ -61,7 +63,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     }
 
     // map the page for the stack of doidle
-    map_page(idle_pcb->region1_pt, MAX_VPN - 1, pfn, PROT_READ | PROT_WRITE);
+    map_page(idle_pcb->region1_pt, MAX_PT_LEN - 1, pfn, PROT_READ | PROT_WRITE);
 
     // Set the registers for the region 1 page table location for doidle
     WriteRegister(REG_PTBR1, (unsigned int)idle_pcb->region1_pt);
@@ -71,7 +73,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     idle_pcb->kernel_stack = InitializeKernelStack();
     cpyuc(idle_pcb->user_context, uctxt);
     idle_pcb->user_context->pc = &DoIdle;                     // DoIdle is in your kernel.c
-    idle_pcb->user_context->sp = (void *)(VMEM_1_LIMIT - 4);  // Standard initial stack pointer
+    idle_pcb->user_context->sp = (void *)(VMEM_1_LIMIT - 5);  // Standard initial stack pointer
 
     // Now that idle is made turn on virtual memory
     enable_virtual_memory();
@@ -106,12 +108,25 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     }
 
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
-    add_to_ready_queue(init_pcb);
-    cpyuc(uctxt, init_pcb->user_context);
-    current_process = idle_pcb;
-    idle_pcb->state = PROCESS_RUNNING;
 
-    TracePrintf(0, "EXIT KernelStart.\n");
+  /*
+   * If switch_flag is 0, we are switching from init, and will enqueue init_pcb and start running idle
+   * Otherwise, we are switching from idle to init, and set page table to init_pcb's page table
+   */
+  if (switch_flag == 0) {
+    add_to_ready_queue(init_pcb);
+    switch_flag = 1;
+    cpyuc(uctxt, idle_pcb->user_context);
+    SetCurrentProcess(idle_pcb);
+  }
+  else {
+    WriteRegister(REG_PTBR1, (unsigned int)init_pcb->region1_pt);
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
+    cpyuc(uctxt, init_pcb->user_context);
+    SetCurrentProcess(init_pcb);
+  }
+
+  TracePrintf(0, "Exiting KernelStart with current process PID: %d\n", current_process->pid);
 }
 
 pcb_t *create_process(void) {
@@ -128,6 +143,11 @@ pcb_t *create_process(void) {
 
     TracePrintf(1, "EXIT create_process. Created process with PID %d\n", new_pcb->pid);
     return new_pcb;
+}
+
+void SetCurrentProcess(pcb_t *process){
+  current_process = process;
+  process->state = PROCESS_RUNNING;
 }
 
 void DoIdle(void) {

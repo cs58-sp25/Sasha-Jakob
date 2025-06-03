@@ -82,15 +82,39 @@ void illegal_handler(UserContext* cont){
     //send the process to the zombie queue to be waited on by the parent
 }
 
-void memory_handler(UserContext* cont){
-    other();
-    //check to see if addr is between the bottom of the user stack and the redzone
-        //if it is drop the UserStack and carry on with life
-    //else 
-        //traceprintf something based on the UserContext code value to say what went wrong (or if the next stack address goes into the redzone/heap)
-        //use exit to kill the process with code ERROR
-        //send the process to the zombie queue to be waited on by the parent
-        //return null in this case
+
+void print_pte(pte_t pageTable[], int pte_index) {
+    if (pte_index < 0 || pte_index > MAX_PT_LEN) {
+        TracePrintf(0, "ERROR: Can't print pte with index %d, out of bounds!", pte_index);
+        return;
+    }
+
+    pte_t pte = pageTable[pte_index];
+    char r = pte.prot & PROT_READ ? 'r': '-';
+    char w = pte.prot & PROT_WRITE ? 'w': '-';
+    char x = pte.prot & PROT_EXEC ? 'x': '-';
+    TracePrintf(0, "pte[%d]: valid: %d   pfn: %d   PROT:%c%c%c\n", pte_index, pte.valid, pte.pfn, r, w, x);
+}
+
+void memory_handler(UserContext* cont) {
+    int regionNumber = ((unsigned long) cont->addr) / VMEM_REGION_SIZE;
+    void* relativeMemLocation = regionNumber == 1 ? cont->addr - VMEM_1_BASE : cont->addr;
+    int page = (int) relativeMemLocation >> PAGESHIFT;
+    // Print the offending address
+    TracePrintf(0, "Memory trap: Offending address 0x%lx\n", (unsigned long)cont->addr);
+
+    // Calculate and print the offending page number
+    // Assuming PAGESHIFT is defined (e.g., 12 for 4KB pages)
+    TracePrintf(0, "Memory trap: Offending page %d in region %d \n", page, regionNumber);
+
+    if (regionNumber == 0) {
+        TracePrintf(0, "Region 0 "); // omit newline, we're prepending the pte traceprint
+        print_pte(region0_pt, page);
+    } else if (regionNumber == 1) {
+        TracePrintf(0, "Region 1 ");
+        print_pte(current_process->region1_pt, page);
+    }   
+    // ... rest of your memory_handler logic (e.g., handling the trap, potentially halting)
 }
 
 void math_handler(UserContext* cont){

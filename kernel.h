@@ -35,6 +35,8 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt);
 pcb_t *create_process(void);
 
 
+void SetCurrentProcess(pcb_t *process);
+
 /**
  * DoIdle - The idle process function
  *

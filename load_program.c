@@ -195,7 +195,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> These pages should be marked valid, with a protection of
      * ==>> (PROT_READ | PROT_WRITE).
      */
-    
+
     TracePrintf(1, "Load_program: Allocating pages for physical text.\n");
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
         int nf = allocate_frame();
@@ -216,15 +216,14 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
 
     TracePrintf(1, "Load_program: Allocating pages for data.\n");
     for (int i = data_pg1; i < data_pg1 + data_npg; i++) {
-        pte_t entry = proc->region1_pt[i];
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
         }
-        proc->region1_pt[i].valid = 1;
-        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;
-        proc->region1_pt[i].pfn = nf;
+        proc->region1_pt[i].valid = 1;                      // CORRECT: Modifies the actual page table entry
+        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;  // CORRECT: Modifies the actual page table entry
+        proc->region1_pt[i].pfn = nf;                       // CORRECT: Modifies the actual page table entry
     }
 
     /*
@@ -236,15 +235,14 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
 
     TracePrintf(1, "Load_program: Allocating pages for stack.\n");
     for (int i = MAX_PT_LEN - stack_npg; i < MAX_PT_LEN; i++) {
-        pte_t entry = proc->region1_pt[i];
         int nf = allocate_frame();
         if (nf == ERROR) {
             TracePrintf(1, "ERROR, no new frames to allocate for LoadProgram.\n");
             return ERROR;
         }
-        proc->region1_pt[i].valid = 1;
-        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;
-        proc->region1_pt[i].pfn = nf;
+        proc->region1_pt[i].valid = 1;                      // CORRECT: Modifies the actual page table entry
+        proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;  // CORRECT: Modifies the actual page table entry
+        proc->region1_pt[i].pfn = nf;                       // CORRECT: Modifies the actual page table entry
     }
 
     /*
@@ -261,7 +259,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     TracePrintf(1, "Load_program: Reading the text into memory.\n");
     lseek(fd, li.t_faddr, SEEK_SET);
     segment_size = li.t_npg << PAGESHIFT;
-    
+
     if (read(fd, (void *)li.t_vaddr, segment_size) != segment_size) {
         TracePrintf(0, "Load_program. ERROR failed to do whatever read is supposed to do");
         close(fd);
@@ -274,7 +272,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
     TracePrintf(1, "Load_program: Reading the data into memory.\n");
     lseek(fd, li.id_faddr, 0);
     segment_size = li.id_npg << PAGESHIFT;
-    
+
     if (read(fd, (void *)li.id_vaddr, segment_size) != segment_size) {
         close(fd);
         return KILL;
@@ -295,9 +293,8 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
 
     TracePrintf(1, "Load_program: Making text read and execute only.\n");
     for (int i = text_pg1; i < text_pg1 + li.t_npg; i++) {
-        pte_t entry = proc->region1_pt[i];
-        entry.prot = PROT_READ | PROT_EXEC;
-        // This operation has no effect if the page is not in the TLB, may be inefficient but oh well
+        proc->region1_pt[i].prot = PROT_READ | PROT_EXEC; // CORRECT: Modifies the actual page table entry
+        // The TLB flush is now for an actually updated entry
         WriteRegister(REG_TLB_FLUSH, (unsigned int)VMEM_1_BASE + (i << PAGESHIFT));
     }
 
