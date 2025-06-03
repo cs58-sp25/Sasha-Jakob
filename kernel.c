@@ -32,6 +32,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
     // Initialize trap handlers
     trap_init();
+    syscalls_init();
 
     // Initialize PCB system, which includes process queues
     if (init_pcb_system() != 0) {
@@ -45,6 +46,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     // Create the idle process
     pcb_t *idle_pcb = idle_process;
     idle_pcb = create_process();
+    idle_pcb->time_slice = 1;
     if(idle_pcb == NULL){
         TracePrintf(0, "ERROR, failed to initialize the idle pcb.n");
         Halt();

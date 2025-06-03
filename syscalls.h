@@ -31,4 +31,4 @@ void SysSignal(UserContext *uctxt);
 void SysBroadcast(UserContext *uctxt);
 void SysCvarWait(UserContext *uctxt);
 void SysReclaim(UserContext *uctxt);
-pcb_t *schedule();
+pcb_t *schedule(UserContext *uctxt);

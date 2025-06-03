@@ -26,9 +26,9 @@ void trap_init(void) {
 
 void kernel_handler(UserContext* cont){
     TracePrintf(1, "Enter Kernel_handler.\n");
-    other();
-    int ind = cont->code && YALNIX_MASK;
-    TracePrintf(1, "Syscall with code %d is being called.\n", ind);
+    int ind = cont->code ^ YALNIX_PREFIX;
+    TracePrintf(1, "Syscall with code %x is being called.\n", ind);
+    TracePrintf(1, "%x.\n", SysDelay);
     if (ind >= 0 && ind < 256 && syscall_handlers[ind] != NULL){ 
         // If the syscall exists call it
         syscall_handlers[ind](cont);
@@ -58,7 +58,7 @@ void clock_handler(UserContext* cont){
             // Add the process to the ready queue
 
             // Schedule another process
-            next = schedule();
+            next = schedule(cont);
             if(next == NULL){
                 TracePrintf(1, "ERROR, scheduling a new process has failed.\n");
                 return;
