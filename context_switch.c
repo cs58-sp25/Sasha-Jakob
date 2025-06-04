@@ -112,18 +112,20 @@ void remove_temp_mapping(void) {
 int map_kernel_stack(pte_t *kernel_stack_pt) {
     TracePrintf(1, "map_kernel_stack: Re-mapping kernel stack in Region 0.\n");
 
-    int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE >> PAGESHIFT;
-    void *kernel_stack_vaddr_start = (void *)KERNEL_STACK_BASE;
+    int num_pages = KERNEL_STACK_MAXSIZE >> PAGESHIFT;
+    int page = (int)KERNEL_STACK_BASE >> PAGESHIFT;
 
-    for (int i = 0; i < num_kernel_stack_pages; i++) {
-        // Get the PFN from the provided kernel_stack_pt
-        pte_t *src_pte = kernel_stack_pt + i;
-        int pfn = src_pte->pfn; // Get the physical frame number from the source PTE
+    memcpy(&region0_pt[page], kernel_stack_pt, num_pages * sizeof(pte_t));
 
-        // Map each physical frame of the new kernel stack to its corresponding
-        TracePrintf(0, "map_kernel_stack: Virtual page number is: %d\n", (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT);
-        map_page(region0_pt, (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
-    }
+//    for (int i = 0; i < num_kernel_stack_pages; i++) {
+//        // Get the PFN from the provided kernel_stack_pt
+//        pte_t *src_pte = kernel_stack_pt + i;
+//        int pfn = src_pte->pfn; // Get the physical frame number from the source PTE
+//
+//        // Map each physical frame of the new kernel stack to its corresponding
+//        TracePrintf(0, "map_kernel_stack: physical frame number is: %d\n", );
+//        map_page(region0_pt, (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
+//    }
 
     TracePrintf(0, "Exit map_kernel_stack\n");
 

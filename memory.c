@@ -248,6 +248,14 @@ pte_t *InitializeKernelStack(){
         Halt();
     }
 
+    if(vm_enabled == 0){
+        TracePrintf(1, "Allocating Kernel Stack using physical pages.\n");
+        for (int j = 0; j < KERNEL_STACK_MAXSIZE >> PAGESHIFT; j++){
+            int vpn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
+            map_page(kernel_stack, j, vpn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
+        }
+    }
+
     // if virtual memory is enabled allocate a new frame to use
     if(vm_enabled == 1){
         for (int vpn = 0; vpn < KERNEL_STACK_MAXSIZE >> PAGESHIFT; vpn++){

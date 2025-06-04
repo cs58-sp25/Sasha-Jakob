@@ -147,7 +147,7 @@ int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
         pipe->read_pos = (pipe->read_pos + 1) % PIPE_BUFFER_LEN;
     }
     
-    curr->user_context->regs[0] = to_read;
+    curr->user_context.regs[0] = to_read;
 
     pipe->bytes_in_buffer -= to_read;
     SyncDrainWriters(pipe);
@@ -193,7 +193,7 @@ void SyncDrainWriters(pipe_t *pipe) {
         writer->write_loc = 0;
         writer->waiting_pipe_id = -1;
         writer->state = PROCESS_DEFAULT;
-        writer->user_context->regs[0] = len;
+        writer->user_context.regs[0] = len;
 
         add_to_ready_queue(writer);
     }
@@ -222,7 +222,7 @@ void SyncDrainReaders(pipe_t *pipe){
             pipe->bytes_in_buffer--;
         }
         
-        reader->user_context->regs[0] = to_read;
+        reader->user_context.regs[0] = to_read;
         reader->waiting_pipe_id = -1;
         reader->state = PROCESS_DEFAULT;
         add_to_ready_queue(reader);
@@ -279,7 +279,7 @@ int SyncWritePipe(int pipe_id, void *buf, int len){
         return PCB_BLOCKED;
     }
 
-    writer->user_context->regs[0] = len;
+    writer->user_context.regs[0] = len;
     SyncDrainReaders(pipe);
     return SUCCESS;
 }

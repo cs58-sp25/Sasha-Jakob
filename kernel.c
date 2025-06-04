@@ -44,8 +44,9 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
     init_region0_pageTable((int)_first_kernel_text_page, (int)_first_kernel_data_page, (int)_orig_kernel_brk_page, pmem_size);
     
     // Create the idle process
-    pcb_t *idle_pcb = idle_process;
-    idle_pcb = create_process();
+    pcb_t *idle_pcb = create_process();
+    idle_process = idle_pcb;
+
     idle_pcb->time_slice = 1;
     if(idle_pcb == NULL){
         TracePrintf(0, "ERROR, failed to initialize the idle pcb.n");
@@ -68,9 +69,9 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
     // Set up the kernel stack of doidle, copy the user context into it, and set the pc and sp
     idle_pcb->kernel_stack = InitializeKernelStack();
-    cpyuc(idle_pcb->user_context, uctxt);
-    idle_pcb->user_context->pc = &DoIdle;                     // DoIdle is in your kernel.c
-    idle_pcb->user_context->sp = (void *)(VMEM_1_LIMIT - 5);  // Standard initial stack pointer
+    cpyuc(&idle_pcb->user_context, uctxt);
+    idle_pcb->user_context.pc = &DoIdle;                     // DoIdle is in your kernel.c
+    idle_pcb->user_context.sp = (void *)(VMEM_1_LIMIT - 5);  // Standard initial stack pointer
 
     // Now that idle is made turn on virtual memory
     enable_virtual_memory();
@@ -88,7 +89,7 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
 
     TracePrintf(0, "Initializing kernelStack for INIT_PCB\n");
     init_pcb->kernel_stack = InitializeKernelStack();
-    cpyuc(init_pcb->user_context, uctxt);
+    cpyuc(&init_pcb->user_context, uctxt);
 
     WriteRegister(REG_PTBR1, (unsigned int)init_pcb->region1_pt);
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
@@ -113,13 +114,13 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
   if (switch_flag == 0) {
     add_to_ready_queue(init_pcb);
     switch_flag = 1;
-    cpyuc(uctxt, idle_pcb->user_context);
+    cpyuc(uctxt, &idle_pcb->user_context);
     SetCurrentProcess(idle_pcb);
   }
   else {
     WriteRegister(REG_PTBR1, (unsigned int)init_pcb->region1_pt);
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
-    cpyuc(uctxt, init_pcb->user_context);
+    cpyuc(uctxt, &init_pcb->user_context);
     SetCurrentProcess(init_pcb);
   }
 
@@ -134,17 +135,14 @@ pcb_t *create_process(void) {
         TracePrintf(0, "ERROR: Failed to allocate idle PCB\n");
         return NULL;
     }
-
-    // Make the kernel stack
-    // new_pcb->kernel_stack = InitializeKernelStack();
-
+    TracePrintf(1, "User Context is stored at %p.\n");
     TracePrintf(1, "EXIT create_process. Created process with PID %d\n", new_pcb->pid);
     return new_pcb;
 }
 
 void SetCurrentProcess(pcb_t *process){
-  current_process = process;
-  process->state = PROCESS_RUNNING;
+    current_process = process;
+    process->state = PROCESS_RUNNING;
 }
 
 void DoIdle(void) {
