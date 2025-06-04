@@ -14,32 +14,32 @@ void syscalls_init(void){
     TracePrintf(1, "Enter syscalls_init.\n");
     // And the syscall code with the mask to get just the code, idk why this was set up this way in yuser.h
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
-    syscall_handlers[YALNIX_FORK & YALNIX_MASK] = SysUnimplemented; //SysFork,
-    syscall_handlers[YALNIX_EXEC & YALNIX_MASK] = SysExec;
-    syscall_handlers[YALNIX_EXIT & YALNIX_MASK] = SysUnimplemented; //SysExit,
-    syscall_handlers[YALNIX_WAIT & YALNIX_MASK] = SysWait;
-    syscall_handlers[YALNIX_GETPID & YALNIX_MASK] = SysGetPID;
-    syscall_handlers[YALNIX_BRK & YALNIX_MASK] = SysBrk;
-    syscall_handlers[YALNIX_DELAY & YALNIX_MASK] = SysDelay;
-    syscall_handlers[YALNIX_TTY_READ & YALNIX_MASK] = SysUnimplemented; //SysTtyRead,
-    syscall_handlers[YALNIX_TTY_WRITE & YALNIX_MASK] = SysUnimplemented; //SysTtyWrite,
-    syscall_handlers[YALNIX_PIPE_INIT & YALNIX_MASK] = SysUnimplemented; // SysPipeInit,
-    syscall_handlers[YALNIX_PIPE_READ & YALNIX_MASK] = SysUnimplemented; //SysPipeRead,
-    syscall_handlers[YALNIX_PIPE_WRITE & YALNIX_MASK] = SysUnimplemented; //SysPipeWrite,
-    syscall_handlers[YALNIX_LOCK_INIT & YALNIX_MASK] = SysUnimplemented; //SysLockInit,
-    syscall_handlers[YALNIX_LOCK_ACQUIRE & YALNIX_MASK] = SysUnimplemented; //SysAcquire,
-    syscall_handlers[YALNIX_LOCK_RELEASE & YALNIX_MASK] = SysUnimplemented; //SysRelease,
-    syscall_handlers[YALNIX_CVAR_INIT & YALNIX_MASK] = SysUnimplemented; //SysCvarInit,
-    syscall_handlers[YALNIX_CVAR_SIGNAL & YALNIX_MASK] = SysUnimplemented; //SysCvarSignal,
-    syscall_handlers[YALNIX_CVAR_BROADCAST & YALNIX_MASK] = SysUnimplemented; //SysCvarBroadcast,
-    syscall_handlers[YALNIX_CVAR_WAIT & YALNIX_MASK] = SysUnimplemented; //SysCvarWait,
-    syscall_handlers[YALNIX_RECLAIM & YALNIX_MASK] = SysUnimplemented; //SysReclaim,
+    syscall_handlers[YALNIX_FORK ^ YALNIX_PREFIX] = SysUnimplemented; //SysFork,
+    syscall_handlers[YALNIX_EXEC ^ YALNIX_PREFIX] = SysExec;
+    syscall_handlers[YALNIX_EXIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysExit,
+    syscall_handlers[YALNIX_WAIT ^ YALNIX_PREFIX] = SysWait;
+    syscall_handlers[YALNIX_GETPID ^ YALNIX_PREFIX] = SysGetPID;
+    syscall_handlers[YALNIX_BRK ^ YALNIX_PREFIX] = SysBrk;
+    syscall_handlers[YALNIX_DELAY ^ YALNIX_PREFIX] = SysDelay;
+    syscall_handlers[YALNIX_TTY_READ ^ YALNIX_PREFIX] = SysUnimplemented; //SysTtyRead,
+    syscall_handlers[YALNIX_TTY_WRITE ^ YALNIX_PREFIX] = SysUnimplemented; //SysTtyWrite,
+    syscall_handlers[YALNIX_PIPE_INIT ^ YALNIX_PREFIX] = SysUnimplemented; // SysPipeInit,
+    syscall_handlers[YALNIX_PIPE_READ ^ YALNIX_PREFIX] = SysUnimplemented; //SysPipeRead,
+    syscall_handlers[YALNIX_PIPE_WRITE ^ YALNIX_PREFIX] = SysUnimplemented; //SysPipeWrite,
+    syscall_handlers[YALNIX_LOCK_INIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysLockInit,
+    syscall_handlers[YALNIX_LOCK_ACQUIRE ^ YALNIX_PREFIX] = SysUnimplemented; //SysAcquire,
+    syscall_handlers[YALNIX_LOCK_RELEASE ^ YALNIX_PREFIX] = SysUnimplemented; //SysRelease,
+    syscall_handlers[YALNIX_CVAR_INIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarInit,
+    syscall_handlers[YALNIX_CVAR_SIGNAL ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarSignal,
+    syscall_handlers[YALNIX_CVAR_BROADCAST ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarBroadcast,
+    syscall_handlers[YALNIX_CVAR_WAIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarWait,
+    syscall_handlers[YALNIX_RECLAIM ^ YALNIX_PREFIX] = SysUnimplemented; //SysReclaim,
     // Add other syscall handlers here
     TracePrintf(1,"Exit syscalls_init.\n");
 }
 
 void SysUnimplemented(UserContext *uctxt){
-    TracePrintf(1, "The syscall %d has not yet been implemented.\n", uctxt->code & YALNIX_MASK);
+    TracePrintf(1, "The syscall %d has not yet been implemented.\n", uctxt->code ^ YALNIX_PREFIX);
     uctxt->regs[0] = ERROR;
 
 }
@@ -82,7 +82,7 @@ void SysExec(UserContext *uctxt) {
     }
     current_process->state = PROCESS_DEFAULT;
     add_to_ready_queue(current_process);
-    pcb_t *next = schedule();
+    pcb_t *next = schedule(uctxt);
     uctxt = next->user_context;
     TracePrintf(1, "Exit SysExec.\n");
 }
@@ -122,7 +122,7 @@ void SysWait(UserContext *uctxt) {
         current_process->state = PROCESS_DEFAULT;
         current_process->waiting_for_children = 1;
         add_to_blocked_queue(current_process);
-        pcb_t *next = schedule();
+        pcb_t *next = schedule(uctxt);
         uctxt = next->user_context;
     }
     // Remove the child from the list of children
@@ -234,7 +234,7 @@ void SysDelay(UserContext *uctxt){
         add_to_delay_queue(curr, delay);
 
         // Schedule another process
-        next = schedule();
+        next = schedule(uctxt);
         // Set the uctxt to the newly scheduled processes uc
         uctxt = next->user_context;
     } else {
@@ -359,9 +359,10 @@ void SysReclaim(UserContext *uctxt){
 
 }
 
-pcb_t *schedule(){
+pcb_t *schedule(UserContext *uctxt){
     TracePrintf(1, "Enter schedule.\n");
     pcb_t *curr = current_process;
+    TracePrintf(1, "Descheduling process %d.\n", curr->pid);
     list_node_t *node_next = pop(ready_queue);
     if(node_next == NULL){
         TracePrintf(1, "There is no other pcb to queue.\n");
@@ -369,15 +370,16 @@ pcb_t *schedule(){
 
     }
     pcb_t *next = pcb_from_queue_node(node_next);
+    next->run_time = 0;
     int kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
     if(kc == ERROR){
         TracePrintf(1, "There was an issue during switching.\n");
         return NULL;
     }
     //current_process should already be put into a different queue at this point
-    next->state = PROCESS_RUNNING;
-    next->run_time = 0;
-    current_process = next;
+    cpyuc(uctxt, current_process->user_context);    
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
+    TracePrintf(1, "Process %d scheduled.\n", current_process->pid);
     TracePrintf(1, "Exit schedule.\n");
     return next;
 }

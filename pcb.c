@@ -101,6 +101,7 @@ void add_to_ready_queue(pcb_t *process) {
 
     process->state = PROCESS_READY;
     insert_tail(ready_queue, &process->queue_node);
+    TracePrintf(1, "There are now %d processes in the ready queue.\n", ready_queue->count);
     TracePrintf(1, "EXIT add_to_ready_queue.\n");
 }
 
