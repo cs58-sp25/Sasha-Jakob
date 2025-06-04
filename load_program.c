@@ -134,7 +134,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> proc->uc.sp = cp2;
      */
     // Rewrite the line from above to do what it's supposed to
-    proc->user_context->sp = cp2;
+    proc->user_context.sp = cp2;
 
     /*
      * Now save the arguments in a separate buffer in region 0, since
@@ -225,6 +225,8 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
         proc->region1_pt[i].prot = PROT_READ | PROT_WRITE;  // CORRECT: Modifies the actual page table entry
         proc->region1_pt[i].pfn = nf;                       // CORRECT: Modifies the actual page table entry
     }
+    
+    proc->brk = (void *)((data_pg1 + data_npg) << PAGESHIFT);
 
     /*
      * ==>> Then, stack. Allocate "stack_npg" physical pages and map them to the top
@@ -312,7 +314,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> (rewrite the line below to match your actual data structure)
      * ==>> proc->uc.pc = (caddr_t) li.entry;
      */
-    proc->user_context->pc = (caddr_t)li.entry;
+    proc->user_context.pc = (caddr_t)li.entry;
 
     /*
      * Now, finally, build the argument list on the new stack.

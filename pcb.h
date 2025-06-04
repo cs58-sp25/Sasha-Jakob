@@ -31,7 +31,7 @@ typedef enum {
 
 typedef struct pcb {
     // Process context
-    UserContext *user_context;      // User context (saved registers, PC, etc.)
+    UserContext user_context;      // User context (saved registers, PC, etc.)
     KernelContext *kernel_context;  // Kernel context
 
     // Process identification

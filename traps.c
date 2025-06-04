@@ -28,7 +28,6 @@ void kernel_handler(UserContext* cont){
     TracePrintf(1, "Enter Kernel_handler.\n");
     int ind = cont->code ^ YALNIX_PREFIX;
     TracePrintf(1, "Syscall with code %x is being called.\n", ind);
-    TracePrintf(1, "%x.\n", SysDelay);
     if (ind >= 0 && ind < 256 && syscall_handlers[ind] != NULL){ 
         // If the syscall exists call it
         syscall_handlers[ind](cont);
@@ -41,21 +40,21 @@ void kernel_handler(UserContext* cont){
 void clock_handler(UserContext* cont){
     TracePrintf(1, "There has been a clock trap.\n");
     // Loops through all delayed processes, decrements their time, and puts them in the ready queue if they're done delaying
+    
     update_delayed_processes();
+    
     // Update the current process's run_time
     pcb_t *curr = current_process;
     curr->run_time++;
+    
     // Check if the current process run_time == it's time slice
         // If so, change the currently schedeuled process using a KCSwitch
     if(curr->run_time > curr->time_slice){
         pcb_t *next = pcb_from_queue_node(peek(ready_queue));
         TracePrintf(1, "The process has reached it's max timeslices %d.\n", curr->time_slice);
         if(next != NULL){
-            // Set the current process's UC to the given user context
-            curr->user_context = cont;
             // Set the current process's status to the default
             curr->state = PROCESS_DEFAULT;
-            // Add the process to the ready queue
 
             // Schedule another process
             next = schedule(cont);
@@ -63,9 +62,6 @@ void clock_handler(UserContext* cont){
                 TracePrintf(1, "ERROR, scheduling a new process has failed.\n");
                 return;
             }
-            // Set the uctxt to the newly scheduled processes uc
-            add_to_ready_queue(curr);
-            cont = next->user_context;
         }
         
     } else {

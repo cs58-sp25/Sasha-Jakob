@@ -51,8 +51,8 @@ void SysFork(UserContext *uctxt) {
     // Create a new PCB object for the new process
     // Clone the page table for region 1
     pcb_t *new_proc = (pcb_t *) malloc(sizeof(pcb_t));
-    memcpy(new_proc->user_context, uctxt, sizeof(UserContext));
-    current_process->user_context = uctxt;
+    cpyuc(&new_proc->user_context, uctxt);
+
     // (for now, cow might be implemented later) 
     // copy the data from all of userland over to new pages
     void *cpage = (void *) malloc(PAGESIZE);
@@ -83,7 +83,8 @@ void SysExec(UserContext *uctxt) {
     current_process->state = PROCESS_DEFAULT;
     add_to_ready_queue(current_process);
     pcb_t *next = schedule(uctxt);
-    uctxt = next->user_context;
+    
+    cpyuc(uctxt, &current_process->user_context);
     TracePrintf(1, "Exit SysExec.\n");
 }
 
@@ -123,7 +124,6 @@ void SysWait(UserContext *uctxt) {
         current_process->waiting_for_children = 1;
         add_to_blocked_queue(current_process);
         pcb_t *next = schedule(uctxt);
-        uctxt = next->user_context;
     }
     // Remove the child from the list of children
     else {
@@ -151,11 +151,11 @@ void SysBrk(UserContext *uctxt){
     unsigned int addr = (unsigned int) uctxt->regs[0];
     TracePrintf(1, "ENTER SysBrk. addr is %08x.\n", (unsigned int) addr);
     pcb_t* curr = current_process;
-    unsigned int nbrk = UP_TO_PAGE(addr)>>PAGESHIFT;
+    unsigned int nbrk = (UP_TO_PAGE(addr)>>PAGESHIFT) - MAX_PT_LEN;
     unsigned int cbrk = (unsigned int) curr->brk>>PAGESHIFT;
     // Check to see if the address is a valid spot for the break (not above the stack or below the base of the heap)
         // If not return an error
-    if  (nbrk >= DOWN_TO_PAGE(current_process->user_context->sp)>>PAGESHIFT){
+    if  (nbrk >= DOWN_TO_PAGE(current_process->user_context.sp)>>PAGESHIFT){
         TracePrintf(1, "ERROR, new brk is above current stack pointer.\n");
         uctxt->regs[0] = ERROR;
         return;
@@ -222,27 +222,15 @@ void SysDelay(UserContext *uctxt){
     
     // Look at the ready queue to see if another exists, currently this should just be the idle process
     // Eventually idle should be stored separately maybe and returned if no ready processes exist.
-    pcb_t *next = pcb_from_queue_node(peek(ready_queue));
-    if(next != NULL){
-        // Set return to 0 for when the process is done delaying
-        uctxt->regs[0] = 0;
-        // Set the current process's UC to the given user context
-        curr->user_context = uctxt;
-        // Set the current process's status to the default
-        curr->state = PROCESS_DEFAULT;
-        // Add the process to the delay queue
-        add_to_delay_queue(curr, delay);
+    
+    // Set return to 0 for when the process is done delaying
+    uctxt->regs[0] = 0;
+    // Set the current process's UC to the given user context
+    curr->state = PROCESS_DEFAULT;
+    // Add the process to the delay queue
+    add_to_delay_queue(curr, delay);
 
-        // Schedule another process
-        next = schedule(uctxt);
-        // Set the uctxt to the newly scheduled processes uc
-        uctxt = next->user_context;
-    } else {
-        TracePrintf(1, "ERROR, there was no other process to put in ready.\n");
-        uctxt->regs[0] = ERROR;
-        return;
-
-    }
+    pcb_t *next = schedule(uctxt);
     
     TracePrintf(1, "EXIT SysDelay, proccess %d is waiting for %d ticks.\n", curr->pid, delay);
 }
@@ -362,14 +350,13 @@ void SysReclaim(UserContext *uctxt){
 pcb_t *schedule(UserContext *uctxt){
     TracePrintf(1, "Enter schedule.\n");
     pcb_t *curr = current_process;
-    TracePrintf(1, "Descheduling process %d.\n", curr->pid);
-    list_node_t *node_next = pop(ready_queue);
-    if(node_next == NULL){
-        TracePrintf(1, "There is no other pcb to queue.\n");
-        return NULL;
+    TracePrintf(1, "Descheduling process %d, sp %p, pc %p, saved into %p.\n", curr->pid, uctxt->sp, uctxt->pc, curr->user_context);
+    pcb_t *next;
+    if(ready_queue->count == 0){
+        next = idle_process;
+    } else next = pcb_from_queue_node(pop(ready_queue));
+    cpyuc(&current_process->user_context, uctxt);
 
-    }
-    pcb_t *next = pcb_from_queue_node(node_next);
     next->run_time = 0;
     int kc = KernelContextSwitch(KCSwitch, (void *) curr, (void *) next);
     if(kc == ERROR){
@@ -377,9 +364,9 @@ pcb_t *schedule(UserContext *uctxt){
         return NULL;
     }
     //current_process should already be put into a different queue at this point
-    cpyuc(uctxt, current_process->user_context);    
+    cpyuc(uctxt, &current_process->user_context);    
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
-    TracePrintf(1, "Process %d scheduled.\n", current_process->pid);
+    TracePrintf(1, "Process %d scheduled, sp %p, pc %p, copied from %p, into %p.\n", current_process->pid, uctxt->sp, uctxt->pc, current_process->user_context, uctxt);
     TracePrintf(1, "Exit schedule.\n");
     return next;
 }
