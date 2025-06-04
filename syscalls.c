@@ -48,38 +48,39 @@ void SysUnimplemented(UserContext *uctxt){
 
 
 void SysFork(UserContext *uctxt) {
-    pcb_t *current_pcb = current_process;
-    pcb_t *new_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
-    new_pcb->parent = current_pcb;
+    pcb_t *parent_pc = current_process;
+    pcb_t *child_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
+    child_pcb->kernel_stack = InitializeKernelStack();
+    child_pcb->parent = parent_pc;
 
     // Copy the user context passed from the trap handler into the new child PCB
-    cpyuc(&new_pcb->user_context, uctxt);
+    cpyuc(&child_pcb->user_context, uctxt);
 
     // Copy the page table content from the parent to the child, allocating new frames for the child
-    CopyPageTable(current_pcb, new_pcb);
+    CopyPageTable(parent_pc, child_pcb);
 
     // Context switch to the child
-    int rc = KernelContextSwitch(KCCopy, new_pcb, NULL);
+    int rc = KernelContextSwitch(KCCopy, child_pcb, NULL);
     if (rc == -1) {
         TracePrintf(0, "KernelContextSwitch failed when forking\n");
         Halt();
     }
 
     // After context switch, check if we're in the child context
-    if (current_process->pid == new_pcb->pid) {
+    if (current_process->pid == child_pcb->pid) {
         // We're in the child
         WriteRegister(REG_PTBR1, (unsigned int)new_pcb->region1_pt);
         WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
         uctxt->regs[0] = 0;
     } else {
         // We're in the parent
-        add_to_ready_queue(new_pcb);
+        add_to_ready_queue(child_pcb);
 
         // Make sure the parent's page table is correctly set
-        WriteRegister(REG_PTBR1, (unsigned int)current_pcb->region1_pt);
+        WriteRegister(REG_PTBR1, (unsigned int)parent_pc->region1_pt);
         WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
-        uctxt->regs[0] = new_pcb->pid;
+        uctxt->regs[0] = child_pcb->pid;
     }
 }
 

@@ -59,7 +59,7 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
 void enable_virtual_memory(void);
 
 
-pte_t *InitializeKernelStack();
+pte_t *InitializeKernelStack(void);
 
 
 /**
