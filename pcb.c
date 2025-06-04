@@ -40,8 +40,6 @@ pcb_t *create_pcb(void) {
         return NULL;
     } // If it failed return NULL
     
-    new_pcb->kernel_context = malloc(sizeof(KernelContext));
-
     // Assign unique PID
     new_pcb->pid = 0;
 
@@ -91,7 +89,7 @@ pcb_t *create_pcb(void) {
 void add_to_ready_queue(pcb_t *process) {
     TracePrintf(1, "ENTER add_to_ready_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_DEFAULT) {
@@ -108,7 +106,7 @@ void add_to_ready_queue(pcb_t *process) {
 void remove_from_ready_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_ready_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_READY) {
@@ -123,7 +121,7 @@ void remove_from_ready_queue(pcb_t *process) {
 void add_to_delay_queue(pcb_t *process, int ticks) {
     TracePrintf(1, "ENTER add_to_delay_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     // Check if process is already in a queue
@@ -141,7 +139,7 @@ void add_to_delay_queue(pcb_t *process, int ticks) {
 void remove_from_delay_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_delay_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_DELAYED) {
@@ -156,11 +154,11 @@ void remove_from_delay_queue(pcb_t *process) {
 void add_to_zombie_queue(pcb_t *process) {
     TracePrintf(1, "ENTER add_to_zombie_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_DEFAULT) {
-        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT");
+        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT.\n");
         return;
     };
     process->state = PROCESS_ZOMBIE;
@@ -171,7 +169,7 @@ void add_to_zombie_queue(pcb_t *process) {
 void remove_from_zombie_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_zombie_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_ZOMBIE) {
@@ -186,11 +184,11 @@ void remove_from_zombie_queue(pcb_t *process) {
 void add_to_blocked_queue(pcb_t *process) {
     TracePrintf(1, "ENTER add_to_blocked_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_DEFAULT) {
-        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT");
+        TracePrintf(1, "ERROR, The state of the process was not PROCESS_DEFAULT.\n");
         return;
     };
     process->state = PROCESS_BLOCKED;
@@ -201,7 +199,7 @@ void add_to_blocked_queue(pcb_t *process) {
 void remove_from_blocked_queue(pcb_t *process) {
     TracePrintf(1, "ENTER remove_from_blocked_queue.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized pcb.\n");
         return;
     }
     if (process->state != PROCESS_BLOCKED) {
@@ -213,26 +211,11 @@ void remove_from_blocked_queue(pcb_t *process) {
     TracePrintf(1, "EXIT remove_from_blocked_queue.\n");
 }
 
-// We might need to move this to where KCSwitch and Copy are to avoid circular includes
-pcb_t *schedule_next_process(void) {
-    TracePrintf(1, "ENTER schedule_next_process.\n");
-    // If the ready queue is empty return NULL, this means that either it's idle (might create idling process later) OR there is no other process to switch to and the current process is still running
-    if(list_is_empty(ready_queue)) {
-        TracePrintf(1, "EXIT schedule_next_process, no other processes to schedule.\n");
-        return NULL;
-    }
-
-    // Select next process to run from ready queue
-    pcb_t *next = pcb_from_queue_node(pop(ready_queue));
-    return next; 
-    TracePrintf(1, "EXIT schedule_next_process.\n");
-}
-
 // Used in a wait syscall
 pcb_t *find_zombie_child(pcb_t *process) {
     TracePrintf(1, "ENTER find_zombie_child.\n");
     if(process == NULL){
-        TracePrintf(1, "ERROR, process was not an initialized pcb");
+        TracePrintf(1, "ERROR, process was not an initialized.\n");
         return NULL;
     }
     if(list_is_empty(&process->children)) {
@@ -292,7 +275,7 @@ void check_zombies(void) {
     }
     
     list_node_t *head = &zombie_queue->head;
-    list_node_t *curr = head->next;
+    list_node_t *curr = peek(zombie_queue);
     while(curr != head){
         list_node_t *next = curr->next; // Store next before removal
         pcb_t *curr_pcb = pcb_from_queue_node(curr);
@@ -330,37 +313,6 @@ pcb_t *list_contains_pid(list_t *list, int pid){
     return NULL;
 }
 
-pcb_t *get_pcb_by_pid(int pid) {
-    TracePrintf(1, "ENTER get_pcb_by_pid.\n");
-    pcb_t *pcb = list_contains_pid(ready_queue, pid);
-    if(pcb != NULL) {
-        TracePrintf(1, "The pcb %d exists in ready_queue.\n", pid);
-        return pcb;
-    }
-    
-    pcb = list_contains_pid(delay_queue , pid);
-    if(pcb != NULL) {
-        TracePrintf(1, "The pcb %d exists in delay_queue.\n", pid);
-        return pcb;
-    }
-
-    pcb = list_contains_pid(blocked_queue, pid);
-    if(pcb != NULL) {
-        TracePrintf(1, "The pcb %d exists in blocked_queue.\n", pid);
-        return pcb;
-    }
-
-    pcb = list_contains_pid(zombie_queue, pid);
-    if(pcb != NULL) {
-        TracePrintf(1, "The pcb %d exists in zombie_queue.\n", pid);
-        return pcb;
-    }
-
-    TracePrintf(1, "The pcb %d does not exist.\n", pid);
-    return NULL;
-    
-}
-
 void add_child(pcb_t *parent, pcb_t *child) {
     TracePrintf(1, "ENTER add_child.\n");
     if(parent == NULL){
@@ -381,7 +333,7 @@ void add_child(pcb_t *parent, pcb_t *child) {
 void remove_child(pcb_t *child) {
     TracePrintf(1, "ENTER remove_child.\n");
     if(child == NULL){
-        TracePrintf(1, "ERROR, The child was not an initialized pcb");
+        TracePrintf(1, "ERROR, The child was not an initialized pcb.\n");
         return;
     }
     if (child->parent == NULL){
@@ -449,7 +401,8 @@ void free_process_memory(pcb_t *proc) {
         TracePrintf(1, "ERROR, input is not a valid process.\n");
         return;
     }
-
+    
+    // Call to free userspace
     free_userspace(proc);
 
     // Free kernel stack frames
@@ -467,16 +420,20 @@ void terminate_process(pcb_t *process, int status) {
         TracePrintf(1, "Error: Attempting to terminate a NULL PCB.\n");
         return;
     }
+    
     // Set process exit code to state
     process->exit_code = status;
-    // Set process state to PROCESS_ZOMBIE
-    process->state = PROCESS_ZOMBIE;
+    process->state = PROCESS_DEFAULT;
+
     // Orphan children if any (set their parent to NULL)
     orphan_children(process);
+    
     // Release process resources except PCB itself
     free_process_memory(process);
-    // Remove from any queue the process might be in
+    free(process->kernel_stack);
+    free(process->region1_pt);
     
+    // Remove from any queue the process might be in
     if (process->state != PROCESS_ZOMBIE) {
         if (process->state == PROCESS_READY) {
             remove_from_ready_queue(process);
@@ -491,7 +448,10 @@ void terminate_process(pcb_t *process, int status) {
     if(process->parent != NULL && process->parent->waiting_for_children){
         remove_from_blocked_queue(process->parent);
         add_to_ready_queue(process->parent);
-        process->parent->user_context.regs[0] = status;
+        if ((int *)process->parent->user_context.regs[0] != NULL){
+            int *status_ptr = (int *) process->parent->user_context.regs[0];
+            *status_ptr = status;
+        }
 
         free(process);
         return;
@@ -502,15 +462,3 @@ void terminate_process(pcb_t *process, int status) {
     TracePrintf(1, "EXIT terminate_process.\n");
 }
 
-void destroy_pcb(pcb_t *process){
-    TracePrintf(1, "ENTER destroy_pcb.\n");
-    if (process == NULL) {
-        TracePrintf(1, "Error: Attempting to destroy a NULL PCB.\n");
-        return;
-    }
-    // Free all resources associated with the PCB
-    free_process_memory(process);
-    // Free the PCB structure itself
-    free(process);
-    TracePrintf(1, "EXIT destroy_pcb.\n");
-}

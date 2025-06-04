@@ -14,30 +14,50 @@
 
 
 KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
-    pcb_t *curr_proc = (pcb_t *)curr_pcb_p;
-    pcb_t *next_proc = (pcb_t *)next_pcb_p;
+    if (curr_pcb_p != NULL){ 
+        pcb_t *curr_proc = (pcb_t *)curr_pcb_p;
+        pcb_t *next_proc = (pcb_t *)next_pcb_p;
 
-    TracePrintf(3, "KCSwitch: From PID %d to PID %d.\n", curr_proc ? curr_proc->pid : -1, next_proc->pid);
+        TracePrintf(3, "KCSwitch: From PID %d to PID %d.\n", curr_proc ? curr_proc->pid : -1, next_proc->pid);
 
-    // Copy the current KernelContext (kc_in) into the old PCB
-    memcpy(curr_proc->kernel_context, kc_in, sizeof(KernelContext));
+        // Copy the current KernelContext (kc_in) into the old PCB
+        memcpy(&curr_proc->kernel_context, kc_in, sizeof(KernelContext));
     
-    // Set the next process
-    current_process = next_proc;
-    next_proc->state = PROCESS_RUNNING;
+        // Set the next process
+        current_process = next_proc;
+        next_proc->state = PROCESS_RUNNING;
     
-    // Update the global current_process variable
-    map_kernel_stack(next_proc->kernel_stack);
+        // Update the global current_process variable
+        map_kernel_stack(next_proc->kernel_stack);
 
-    // Change Region 1 Page Table Base Register (REG_PTBR1) to the new PCB's Region 1 page table
-    WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
+        // Change Region 1 Page Table Base Register (REG_PTBR1) to the new PCB's Region 1 page table
+        WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
 
-    // Flush the TLB to ensure new mappings are used
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
+        // Flush the TLB to ensure new mappings are used
+        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
 
-    // Return a pointer to the KernelContext in the new PCB
-    TracePrintf(0, "Returning from KCSwitch\n");
-    return next_proc->kernel_context;
+        // Return a pointer to the KernelContext in the new PCB
+        TracePrintf(0, "Returning from KCSwitch\n");
+        return &next_proc->kernel_context;
+    } else {
+        pcb_t *next_proc = (pcb_t *)next_pcb_p;
+        
+        // Set the next process
+        current_process = next_proc;
+        next_proc->state = PROCESS_RUNNING;
+    
+        // Update the global current_process variable
+        map_kernel_stack(next_proc->kernel_stack);
+
+        // Change Region 1 Page Table Base Register (REG_PTBR1) to the new PCB's Region 1 page table
+        WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
+
+        // Flush the TLB to ensure new mappings are used
+        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
+
+        TracePrintf(0, "Returning from KCSwitch\n");
+        return &next_proc->kernel_context;
+    }
 }
 
 
@@ -48,7 +68,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
 
     // Save the incoming KernelContext (kc_in) into the new PCB's kernel_context field.
     // This kc_in contains the state of the caller function just before KernelContextSwitch was invoked.
-    memcpy(new_proc->kernel_context, kc_in, sizeof(KernelContext));
+    memcpy(&new_proc->kernel_context, kc_in, sizeof(KernelContext));
 
     int num_kernel_stack_pages = KERNEL_STACK_MAXSIZE / PAGESIZE;
     char *current_kernel_stack_base = (char *)KERNEL_STACK_BASE;

@@ -50,18 +50,19 @@ void clock_handler(UserContext* cont){
     // Check if the current process run_time == it's time slice
         // If so, change the currently schedeuled process using a KCSwitch
     if(curr->run_time > curr->time_slice){
-        pcb_t *next = pcb_from_queue_node(peek(ready_queue));
         TracePrintf(1, "The process has reached it's max timeslices %d.\n", curr->time_slice);
-        if(next != NULL){
+        if(ready_queue->count != 0){
             // Set the current process's status to the default
             curr->state = PROCESS_DEFAULT;
 
             // Schedule another process
-            next = schedule(cont);
+            pcb_t *next = schedule(cont);
             if(next == NULL){
                 TracePrintf(1, "ERROR, scheduling a new process has failed.\n");
                 return;
             }
+        } else {
+            TracePrintf(1, "But there were no other processes to run.\n");
         }
         
     } else {

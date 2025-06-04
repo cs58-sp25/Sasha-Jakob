@@ -32,7 +32,7 @@ typedef enum {
 typedef struct pcb {
     // Process context
     UserContext user_context;      // User context (saved registers, PC, etc.)
-    KernelContext *kernel_context;  // Kernel context
+    KernelContext kernel_context;  // Kernel context
 
     // Process identification
     int pid;   // Process ID
@@ -181,16 +181,6 @@ void add_to_blocked_queue(pcb_t *process);
  */
 void remove_from_blocked_queue(pcb_t *process) ;
 
-
-/**
- * Schedule next process to run
- * Selects the next ready process based on scheduling policy
- *
- * @return Pointer to next process to run
- */
-pcb_t *schedule_next_process(void);
-
-
 /**
  * Check if process has exited children
  *
@@ -222,16 +212,6 @@ void check_zombies(void);
 pcb_t *list_contains_pcb(list_t *list, int pid);
 
 /**
- * Get PCB by PID
- * Finds a process by its ID
- *
- * @param pid Process ID to find
- * @return PCB pointer if found, NULL if not
- */
-pcb_t *get_pcb_by_pid(int pid);
-
-
-/**
  * Add child to parent's children list
  *
  * @param parent Parent PCB
@@ -257,6 +237,7 @@ void remove_child(pcb_t *child);
 void orphan_children(pcb_t *parent);
 
 
+void free_userspace(pcb_t *proc);
 /**
  * Frees all memory in relation to a process
  * 
@@ -272,12 +253,5 @@ void free_process_memory(pcb_t *proc);
  */
 void terminate_process(pcb_t *process, int status);
 
-/**
- * Destroy a PCB
- * Deallocates PCB and associated resources
- *
- * @param process PCB to destroy
- */
-void destroy_pcb(pcb_t *process);
 
 #endif /* _PCB_H_ */

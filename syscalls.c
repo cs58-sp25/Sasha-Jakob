@@ -17,7 +17,7 @@ void syscalls_init(void){
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
     syscall_handlers[YALNIX_FORK ^ YALNIX_PREFIX] = SysUnimplemented; //SysFork,
     syscall_handlers[YALNIX_EXEC ^ YALNIX_PREFIX] = SysExec;
-    syscall_handlers[YALNIX_EXIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysExit,
+    syscall_handlers[YALNIX_EXIT ^ YALNIX_PREFIX] = SysExit,
     syscall_handlers[YALNIX_WAIT ^ YALNIX_PREFIX] = SysWait;
     syscall_handlers[YALNIX_GETPID ^ YALNIX_PREFIX] = SysGetPID;
     syscall_handlers[YALNIX_BRK ^ YALNIX_PREFIX] = SysBrk;
@@ -79,7 +79,7 @@ void SysFork(UserContext *uctxt) {
     cpyuc(&new_pcb->user_context, uctxt);
 
     // Copy the page table content from the parent to the child, allocating new frames for the child
-    CopyPageTable(current_pcb, new_pcb); // update this -----------------------------------------------------
+    //CopyPageTable(current_pcb, new_pcb); // update this -----------------------------------------------------
 
     // Context switch to the child
     int rc = KernelContextSwitch(KCCopy, new_pcb, NULL);
@@ -126,12 +126,9 @@ void SysExec(UserContext *uctxt) {
 }
 
 void SysExit(UserContext *uctxt) {
-    // Set zombie to true for process
-    // Save the exit status to the PCB
-    // Check to see if the parent is blocked and waiting on children to exit
-    // Clear all memory or mark it for reclamation
-    // Add the process to the zombie queue
+    terminate_process(current_process, (int) uctxt->regs[0]);
     // Schedule the next process
+    schedule(uctxt);
 
 }
 
