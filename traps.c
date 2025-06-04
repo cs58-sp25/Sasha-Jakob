@@ -73,10 +73,9 @@ void clock_handler(UserContext* cont){
 
 
 void illegal_handler(UserContext* cont){
-    other();
-    //traceprintf something based on the USerContext code value to say what went wrong
-    //use exit to kill the process with code ERROR
-    //send the process to the zombie queue to be waited on by the parent
+    TracePrintf(1, "Process PID %d has hit an illegal instruction %x.\n", current_process->pid, cont->code);
+    cont->regs[0] = ERROR;
+    SysExit(cont);
 }
 
 
@@ -102,10 +101,9 @@ void memory_handler(UserContext* cont) {
 }
 
 void math_handler(UserContext* cont){
-    other();
-    //traceprintf something based on the USerContext code value to say what went wrong
-    //use exit to kill the process with code ERROR
-    //send the process to the zombie queue to be waited on by the parent
+    TracePrintf(1, "Process PID %d has hit a math error %x.\n", current_process->pid, cont->code);
+    cont->regs[0] = ERROR;
+    SysExit(cont);
 }
 
 void receive_handler(UserContext* cont){

@@ -119,9 +119,7 @@ void SysExec(UserContext *uctxt) {
     }
     current_process->state = PROCESS_DEFAULT;
     add_to_ready_queue(current_process);
-    pcb_t *next = schedule(uctxt);
-    
-    cpyuc(uctxt, &current_process->user_context);
+    pcb_t *next = schedule(uctxt); 
     TracePrintf(1, "Exit SysExec.\n");
 }
 
