@@ -2,6 +2,7 @@
 #include <yuser.h>
 #include <ctype.h>
 #include <hardware.h>
+#include <ykernel.h>
 
 #include "syscalls.h"
 #include "load_program.h"
@@ -24,17 +25,17 @@ void syscalls_init(void){
     syscall_handlers[YALNIX_DELAY ^ YALNIX_PREFIX] = SysDelay;
     syscall_handlers[YALNIX_TTY_READ ^ YALNIX_PREFIX] = SysUnimplemented; //SysTtyRead,
     syscall_handlers[YALNIX_TTY_WRITE ^ YALNIX_PREFIX] = SysUnimplemented; //SysTtyWrite,
-    syscall_handlers[YALNIX_PIPE_INIT ^ YALNIX_PREFIX] = SysPipeInit,
-    syscall_handlers[YALNIX_PIPE_READ ^ YALNIX_PREFIX] = SysPipeRead,
-    syscall_handlers[YALNIX_PIPE_WRITE ^ YALNIX_PREFIX] = SysUnimplemented; //SysPipeWrite,
-    syscall_handlers[YALNIX_LOCK_INIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysLockInit,
-    syscall_handlers[YALNIX_LOCK_ACQUIRE ^ YALNIX_PREFIX] = SysUnimplemented; //SysAcquire,
-    syscall_handlers[YALNIX_LOCK_RELEASE ^ YALNIX_PREFIX] = SysUnimplemented; //SysRelease,
-    syscall_handlers[YALNIX_CVAR_INIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarInit,
-    syscall_handlers[YALNIX_CVAR_SIGNAL ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarSignal,
-    syscall_handlers[YALNIX_CVAR_BROADCAST ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarBroadcast,
-    syscall_handlers[YALNIX_CVAR_WAIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysCvarWait,
-    syscall_handlers[YALNIX_RECLAIM ^ YALNIX_PREFIX] = SysUnimplemented; //SysReclaim,
+    syscall_handlers[YALNIX_PIPE_INIT ^ YALNIX_PREFIX] = SysPipeInit;
+    syscall_handlers[YALNIX_PIPE_READ ^ YALNIX_PREFIX] = SysPipeRead;
+    syscall_handlers[YALNIX_PIPE_WRITE ^ YALNIX_PREFIX] = SysPipeWrite;
+    syscall_handlers[YALNIX_LOCK_INIT ^ YALNIX_PREFIX] = SysLockInit;
+    syscall_handlers[YALNIX_LOCK_ACQUIRE ^ YALNIX_PREFIX] = SysLockAcquire;
+    syscall_handlers[YALNIX_LOCK_RELEASE ^ YALNIX_PREFIX] = SysLockRelease;
+    syscall_handlers[YALNIX_CVAR_INIT ^ YALNIX_PREFIX] = SysCvarInit;
+    syscall_handlers[YALNIX_CVAR_SIGNAL ^ YALNIX_PREFIX] = SysSignal;
+    syscall_handlers[YALNIX_CVAR_BROADCAST ^ YALNIX_PREFIX] = SysBroadcast;
+    syscall_handlers[YALNIX_CVAR_WAIT ^ YALNIX_PREFIX] = SysCvarWait;
+    syscall_handlers[YALNIX_RECLAIM ^ YALNIX_PREFIX] = SysReclaim;
     // Add other syscall handlers here
     TracePrintf(1,"Exit syscalls_init.\n");
 }
@@ -296,76 +297,126 @@ void SysPipeRead(UserContext *uctxt){
     // pass these values, along with current pcb, to ReadPipe from sync
     // if it returns, return the return value of ReadPipe
     int rc = SyncReadPipe(pipe_id, kbuf, len);
-    if(rc = PROCESS_BLOCKED){
+    if(rc == PROCESS_BLOCKED){
         schedule(uctxt);
     
+    } else if (rc == ERROR){
+        TracePrintf(1, "Something went wrong with SyncReadPipe.\n");
+        return;
+
     }
     
-    // 
+    // Copy what is written into the kernel buffer into the user buffer, this is only reached after being rescheduled. 
     memcpy(buf, kbuf, len);
+    free(kbuf);
 
 }
 
 void SysPipeWrite(UserContext *uctxt){
     // get the pipe id, buf, and len from UserContext
+    int pipe_id = uctxt->regs[0];
+    void *buf = (void *)uctxt->regs[1]; // CREATE A SECOND BUFFER IN KERNEL TO PASS
+    int len = uctxt->regs[2]; 
+   
+    //kbuf is used to store the contents of buf in kernel so that it can still work if the process is not scheudled
+    void *kbuf = malloc(len);
+    memcpy(kbuf, buf, len);
+    
     // pass these values to WritePipe from sync
+    int rc = SyncWritePipe(pipe_id, kbuf, len);
+    if(rc == PROCESS_BLOCKED){
+        schedule(uctxt);
+
+    } else if (rc == ERROR){
+        TracePrintf(1, "Something went wrong with SyncWritePipe.\n");
+        return;
+
+    }
+
     // if it returns, return the return value of ReadPipe
+    free(kbuf);
 
 }
 
 void SysLockInit(UserContext *uctxt){
     // Get the int *lock_id from the UserContext
+    int *lock_idp = (int *)uctxt->regs[0];
     // pass the values to InitLock from sync.c
-    // return the return value of InitLock
+    uctxt->regs[0] = SyncInitLock(lock_idp);
 
 }
 
 void SysLockAcquire(UserContext *uctxt){
     // Get the int lock_id from the UserContext
+    int lock_id = uctxt->regs[0];
     // pass the values to Acquire from sync.c
-    // return the return value of Acquire
+    int rc = SyncLockAcquire(lock_id);
+    if (rc == PROCESS_BLOCKED){
+        schedule(uctxt);
+        
+    } else {
+        uctxt->regs[0] = rc;
 
+    }
 }
 
 void SysLockRelease(UserContext *uctxt){
     // Get the int lock_id from the UserContext
+    int lock_id = uctxt->regs[0];
     // pass the values to Release from sync.c
-    // return the return value of release
+    uctxt->regs[0] = SyncLockRelease(lock_id);
 
 }
 
 void SysCvarInit(UserContext *uctxt){
     // Get the int *cvar_id from the UserContext
+    int *lock_idp = (int *)uctxt->regs[0];
     // pass the values to InitCvar from sync.c
-    // return the return value of InitCvar
+    uctxt->regs[0] = SyncInitCvar(lock_idp);
 
 }
 
 void SysSignal(UserContext *uctxt){
     // Get the int cvar_id from the UserContext
+    int cvar_id = uctxt->regs[0];
     // pass the values to CvarSignal from sync.c
-    // return the return value of CvarSignal
+    uctxt->regs[0] = SyncCvarSignal(cvar_id);
 
 }
 
 void SysBroadcast(UserContext *uctxt){
     // Get the int cvar_id from the UserContext
-    // pass the values to CvarBroadcast from sync.c
-    // return the return value of CvarBroadcast
+    int cvar_id = uctxt->regs[0];
+    // pass the values to CvarSignal from sync.c
+    uctxt->regs[0] = SyncCvarBroadcast(cvar_id);
 
 }
 
 void SysCvarWait(UserContext *uctxt){
     // Get the int cvar_id and int lock_id from the UserContext
+    int cvar_id = uctxt->regs[0];
+    int lock_id = uctxt->regs[0];
+
     // pass the values to CvarWait from sync.c
-    // return the return value of CvarWait
+    int rc = SyncCvarWait(cvar_id, lock_id);
+    if (rc == ERROR){
+        uctxt->regs[0] = ERROR;
+        return;
+    }
+   
+    // Otherwise the process is now blocked
+    schedule(uctxt);
+    // Attempt to reacquire the lock afterwards
+    SyncLockAcquire(lock_id);
+    uctxt->regs[0] = SUCCESS;
 
 }
 
 void SysReclaim(UserContext *uctxt){
     // Get the sync object id from the UserContext
+    int sync_id = uctxt->regs[0];
     // pass the values to ReclaimSync from sync.c
-    // return the return value of release
+    uctxt->regs[0] = SyncReclaim(sync_id);
 
 }
 

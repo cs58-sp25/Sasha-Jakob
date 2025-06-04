@@ -544,7 +544,7 @@ int SyncCvarBroadcast(int cvar_id){
 
 
 
-int SyncReclaimSync(int id){
+int SyncReclaim(int id){
     TracePrintf(1, "Enter SyncReclaimSync.\n");
     // check if it's a valid id
         // if not return error
