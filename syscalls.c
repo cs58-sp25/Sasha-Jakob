@@ -6,6 +6,7 @@
 #include "syscalls.h"
 #include "load_program.h"
 #include "context_switch.h"
+#include "pcb.h"
 
 syscall_handler_t syscall_handlers[256]; // Array of trap handlers
 
@@ -45,28 +46,64 @@ void SysUnimplemented(UserContext *uctxt){
 }
 
 
-// All of these will also check the registers to ensure that the values stored within make sense
-// If not they will return an error.
-void SysFork(UserContext *uctxt) {
-    // Create a new PCB object for the new process
-    // Clone the page table for region 1
-    pcb_t *new_proc = (pcb_t *) malloc(sizeof(pcb_t));
-    cpyuc(&new_proc->user_context, uctxt);
+// // All of these will also check the registers to ensure that the values stored within make sense
+// // If not they will return an error.
+// void SysFork(UserContext *uctxt) {
+//     // Create a new PCB object for the new process
+//     // Clone the page table for region 1
+//     pcb_t *new_proc = (pcb_t *) malloc(sizeof(pcb_t));
+//     cpyuc(&new_proc->user_context, uctxt);
 
-    // (for now, cow might be implemented later) 
-    // copy the data from all of userland over to new pages
-    void *cpage = (void *) malloc(PAGESIZE);
-    if(cpage == NULL){
-        TracePrintf(1, "ERROR, the dummy page for copying could not be allocated.\n");
-        return;
+//     // (for now, cow might be implemented later) 
+//     // copy the data from all of userland over to new pages
+//     void *cpage = (void *) malloc(PAGESIZE);
+//     if(cpage == NULL){
+//         TracePrintf(1, "ERROR, the dummy page for copying could not be allocated.\n");
+//         return;
+//     }
+//     // Copy all of the pages thorugh the copy page most likely, I need to work on other stuff though
+//     free(cpage);
+//     // KCCopy to add the kernel to the new PCB
+//     // Set the return value in the child context to 0
+//     // Set the return value in the parent context to the child's pid
+
+//     // Add the child to the ready queue
+// }
+
+int SysFork(UserContext *uctxt) {
+    pcb_t *current_pcb = current_process;
+    pcb_t *new_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
+    new_pcb->parent = current_pcb;
+
+    // Copy the user context passed from the trap handler into the new child PCB
+    cpyuc(&new_pcb->user_context, uctxt);
+
+    // Copy the page table content from the parent to the child, allocating new frames for the child
+    CopyPageTable(current_pcb, new_pcb); // update this -----------------------------------------------------
+
+    // Context switch to the child
+    int rc = KernelContextSwitch(KCCopy, new_pcb, NULL);
+    if (rc == -1) {
+        TracePrintf(0, "KernelContextSwitch failed when forking\n");
+        Halt();
     }
-    // Copy all of the pages thorugh the copy page most likely, I need to work on other stuff though
-    free(cpage);
-    // KCCopy to add the kernel to the new PCB
-    // Set the return value in the child context to 0
-    // Set the return value in the parent context to the child's pid
 
-    // Add the child to the ready queue
+    // After context switch, check if we're in the child context
+    if (current_process->pid == new_pcb->pid) {
+        // We're in the child
+        WriteRegister(REG_PTBR1, (unsigned int)new_pcb->region1_pt);
+        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+        return 0;
+    } else {
+        // We're in the parent
+        add_to_ready_queue(new_pcb);
+
+        // Make sure the parent's page table is correctly set
+        WriteRegister(REG_PTBR1, (unsigned int)current_pcb->region1_pt);
+        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+
+        return new_pcb->pid;
+    }
 }
 
 void SysExec(UserContext *uctxt) {
