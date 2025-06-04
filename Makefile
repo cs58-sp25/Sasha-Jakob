@@ -12,8 +12,8 @@
 K_SRC_DIR = .
 
 # What are the kernel c and include files?
-K_SRCS = kernel.c memory.c pcb.c traps.c list.c sync.c load_program.c syscalls.c context_switch.c
-K_INCS = kernel.h memory.h pcb.h traps.h list.h sync.h load_program.h syscalls.h context_switch.h
+K_SRCS = kernel.c memory.c pcb.c traps.c list.c sync.c load_program.c syscalls.c context_switch.c frames.c
+K_INCS = kernel.h memory.h pcb.h traps.h list.h sync.h load_program.h syscalls.h context_switch.h frames.h
 # NOTE -- Add syscalls, sync, 
 
 

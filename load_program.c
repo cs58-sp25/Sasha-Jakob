@@ -168,21 +168,7 @@ int LoadProgram(char *name, char *args[], pcb_t *proc) {
      * ==>> for every valid page, free the pfn and mark the page invalid.
      */
     // Loop over the region 1 page table
-    TracePrintf(1, "Starting to free old region 1 page table.\n");
-    for (int i = 0; i < MAX_PT_LEN; i++) {
-        // Get the ith page table entry
-        pte_t entry = proc->region1_pt[i];
-        if (entry.valid) {
-            // free the pfn
-            TracePrintf(1, "Load_program: freeing physical frame corresponding to virtual page %d\n", i);
-            int pfn = entry.pfn;
-            free_frame(pfn);
-            entry.pfn = 0;
-            // Set the protections and validity of the page to all 0
-            entry.prot = 0;
-            entry.valid = 0;
-        }
-    }
+    free_userspace(proc);
 
     /*
      * ==>> Then, build up the new region1.

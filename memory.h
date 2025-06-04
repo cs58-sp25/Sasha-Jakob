@@ -9,12 +9,11 @@
 
 #include <hardware.h>
 #include "pcb.h"
-
+#include "frames.h"
 
 extern int vm_enabled;  // Flag indicating if virtual memory is enabled
 extern void *kernel_brk;  // Current kernel break address
 extern void *user_brk;    // Current user break address
-extern int *frame_bitMap;      // Bitmap to track free/used frames
 extern pte_t region0_pt[]; // Page table for Region 0
 
 #define ADDR_TO_PAGE_NUM(addr) ((unsigned int)(addr) >> PAGESHIFT)
@@ -22,26 +21,6 @@ extern pte_t region0_pt[]; // Page table for Region 0
 
 void cpyuc(UserContext *dest, UserContext *src);
 
-/**
- * @brief Allocate a free physical frame
- *
- * Iterates through the global frame_bitMap to find an unused physical frame.
- * Marks the found frame as used and returns its physical frame number (pfn).
- *
- * @return Physical frame number on success, -1 if no free frames are available.
- */
-int allocate_frame(void);
-
-
-/**
- * @brief Release a physical frame back to the free pool
- *
- * Marks the specified physical frame number (pfn) as free in the global frame_bitMap.
- * Performs basic validation to ensure the pfn is within valid bounds and was previously allocated.
- *
- * @param pfn Physical frame number to free.
- */
-void free_frame(int pfn);
 
 
 /**

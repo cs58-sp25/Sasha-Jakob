@@ -5,6 +5,7 @@
  */
 #include <ykernel.h>
 #include "pcb.h"
+#include "frames.h"
 
 /* -------------------------------------------------------------- Define Global Variables -------------------------------------------------- */
 pcb_t *current_process = NULL;
@@ -414,15 +415,50 @@ void orphan_children(pcb_t *parent) {
     TracePrintf(1, "EXIT orphan_children.\n");
 }
 
-void free_process_memory(pcb_t *proc) {
-    // Free all physical frames mapped in Region 1 page table
+void free_userspace(pcb_t *proc){
+    TracePrintf(1, "Enter free_userspace.\n");
+    if(proc == NULL) {
+        TracePrintf(1, "ERROR, input is not a valid process.\n");
+        return;
+    }
     // For each valid entry in Region 1 page table:
     //   Get physical frame number
     //   Unmap the virtual page
     //   Free the physical frame
+    TracePrintf(1, "Starting to free region 1 page table.\n");
+    for (int i = 0; i < MAX_PT_LEN; i++) {
+        // Get the ith page table entry
+        pte_t entry = proc->region1_pt[i];
+        if (entry.valid) {
+            // free the pfn
+            int pfn = entry.pfn;
+            TracePrintf(1, "Freeing physical frame %d corresponding to virtual page %d\n", pfn, i);
+            free_frame(pfn);
+            entry.pfn = 0;
+            // Set the protections and validity of the page to all 0
+            entry.prot = 0;
+            entry.valid = 0;
+        }
+    }
+    TracePrintf(1, "Exit free_userspace.\n");
+}
+
+void free_process_memory(pcb_t *proc) {
+    TracePrintf(1, "Enter free_process_memory.\n");
+    if(proc == NULL) {
+        TracePrintf(1, "ERROR, input is not a valid process.\n");
+        return;
+    }
+
+    free_userspace(proc);
+
     // Free kernel stack frames
     // For each frame in kernel_stack_pages:
     //   Free the physical frame
+    for(int i = 0; i < KERNEL_STACK_MAXSIZE >> PAGESHIFT; i++){
+        pte_t entry = proc->kernel_stack[i];
+
+    }
 }
 
 void terminate_process(pcb_t *process, int status) {

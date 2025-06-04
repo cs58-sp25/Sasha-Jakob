@@ -70,7 +70,7 @@ void SysUnimplemented(UserContext *uctxt){
 //     // Add the child to the ready queue
 // }
 
-int SysFork(UserContext *uctxt) {
+void SysFork(UserContext *uctxt) {
     pcb_t *current_pcb = current_process;
     pcb_t *new_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
     new_pcb->parent = current_pcb;
