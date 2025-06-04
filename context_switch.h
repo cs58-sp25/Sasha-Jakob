@@ -12,6 +12,7 @@
 
 #define TEMP_MAPPING_VADDR (KERNEL_STACK_BASE - PAGESIZE)
 #define KSTACK_START_PAGE (KERNEL_STACK_BASE >> PAGESHIFT)
+#define NUM_PAGES_REGION1 (VMEM_1_SIZE / PAGESIZE)
 
 /**
  * Function type for kernel context switch functions
@@ -59,6 +60,9 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
 KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *not_used);
 
 
+void CopyPageTable(pcb_t *parent, pcb_t *child);
+
+
 /**
  * Setup temporary mapping for kernel stack
  * Creates a temporary mapping to access a kernel stack frame
@@ -75,7 +79,7 @@ void setup_temp_mapping(int frame);
  *
  * @param addr Virtual address to unmap
  */
-void remove_temp_mapping(void);
+void remove_temp_mapping(int frame);
 
 
 /**

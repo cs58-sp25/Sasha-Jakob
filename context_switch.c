@@ -4,17 +4,17 @@
  * Description: Context switching implementation for Yalnix OS
  */
 
+#include "context_switch.h"
+
 #include <hardware.h>
 #include <stdbool.h>
-#include "context_switch.h"
+
 #include "kernel.h"
-#include "pcb.h"
 #include "memory.h"
-
-
+#include "pcb.h"
 
 KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p) {
-    if (curr_pcb_p != NULL){ 
+    if (curr_pcb_p != NULL) {
         pcb_t *curr_proc = (pcb_t *)curr_pcb_p;
         pcb_t *next_proc = (pcb_t *)next_pcb_p;
 
@@ -22,11 +22,11 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
 
         // Copy the current KernelContext (kc_in) into the old PCB
         memcpy(&curr_proc->kernel_context, kc_in, sizeof(KernelContext));
-    
+
         // Set the next process
         current_process = next_proc;
         next_proc->state = PROCESS_RUNNING;
-    
+
         // Update the global current_process variable
         map_kernel_stack(next_proc->kernel_stack);
 
@@ -34,18 +34,18 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
         WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
 
         // Flush the TLB to ensure new mappings are used
-        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
+        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);  // Flush all TLB entries for safety
 
         // Return a pointer to the KernelContext in the new PCB
         TracePrintf(0, "Returning from KCSwitch\n");
         return &next_proc->kernel_context;
     } else {
         pcb_t *next_proc = (pcb_t *)next_pcb_p;
-        
+
         // Set the next process
         current_process = next_proc;
         next_proc->state = PROCESS_RUNNING;
-    
+
         // Update the global current_process variable
         map_kernel_stack(next_proc->kernel_stack);
 
@@ -53,16 +53,14 @@ KernelContext *KCSwitch(KernelContext *kc_in, void *curr_pcb_p, void *next_pcb_p
         WriteRegister(REG_PTBR1, (unsigned long)next_proc->region1_pt);
 
         // Flush the TLB to ensure new mappings are used
-        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL); // Flush all TLB entries for safety
+        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);  // Flush all TLB entries for safety
 
         TracePrintf(0, "Returning from KCSwitch\n");
         return &next_proc->kernel_context;
     }
 }
 
-
 KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
-
     pcb_t *new_proc = (pcb_t *)new_pcb_p;
     TracePrintf(1, "KCCopy: Setting up kernel context for PID %d.\n", new_proc->pid);
 
@@ -75,7 +73,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
 
     for (int i = 0; i < num_kernel_stack_pages; i++) {
         // Get the physical frame number (PFN) for the corresponding page in the new kernel stack's page table.
-        pte_t *new_stack_pte = new_proc->kernel_stack + i; // Assuming contiguous PTEs for kernel stack in new_proc->kernel_stack
+        pte_t *new_stack_pte = new_proc->kernel_stack + i;  // Assuming contiguous PTEs for kernel stack in new_proc->kernel_stack
         int dest_pfn = new_stack_pte->pfn;
 
         // Temporarily map the destination frame into Region 0 for copying.
@@ -85,13 +83,33 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
         memcpy((void *)TEMP_MAPPING_VADDR, (void *)((KSTACK_START_PAGE + i) << PAGESHIFT), PAGESIZE);
 
         // Remove the temporary mapping after copying
-        remove_temp_mapping();
+        remove_temp_mapping(dest_pfn);
         new_stack_pte->valid = 1;
         new_stack_pte->prot = PROT_READ | PROT_WRITE;
     }
 
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_KSTACK);
     return kc_in;
+}
+
+void CopyPageTable(pcb_t *parent, pcb_t *child) {
+    pte_t *parent_pt = parent->region1_pt;
+    pte_t *child_pt = child->region1_pt;
+
+    for (int i = 0; i < NUM_PAGES_REGION1; i++) {
+        if (parent_pt[i].valid == 1) {
+            int child_frame = allocate_frame();
+            child_pt[i].pfn = child_frame;
+
+            unsigned int parent_addr = (i + NUM_PAGES_REGION1) << PAGESHIFT;
+            setup_temp_mapping(child_frame);  // Temporary map the frame to the scratch address
+            memcpy((void *)TEMP_MAPPING_VADDR, (void *)parent_addr, PAGESIZE);
+            remove_temp_mapping(child_frame);
+
+            child_pt[i].prot = parent_pt[i].prot;
+            child_pt[i].valid = 1;
+        }
+    }
 }
 
 
@@ -103,21 +121,18 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
 void setup_temp_mapping(int pfn) {
     TracePrintf(1, "setup_temp_mapping: Mapping PFN %d to temporary address %p.\n", pfn, TEMP_MAPPING_VADDR);
     map_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
-    WriteRegister(REG_TLB_FLUSH, TEMP_MAPPING_VADDR); // Flush specific TLB entry
+    WriteRegister(REG_TLB_FLUSH, TEMP_MAPPING_VADDR);  // Flush specific TLB entry
 }
-
-
 
 /**
  * @brief Removes a temporary mapping from Region 0.
  * @param addr The virtual address of the temporary mapping to remove.
  */
-void remove_temp_mapping(void) {
+void remove_temp_mapping(int pfn) {
     TracePrintf(1, "remove_temp_mapping: Unmapping address %p.\n", TEMP_MAPPING_VADDR);
     // Invalidate the PTE for the given virtual address 'addr' in region0_pt.
-    unmap_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT);
+    unmap_page(region0_pt, pfn);
 }
-
 
 /**
  * @brief Maps the kernel stack of the current process (identified by its physical frames) into Region 0.
@@ -137,15 +152,15 @@ int map_kernel_stack(pte_t *kernel_stack_pt) {
 
     memcpy(&region0_pt[page], kernel_stack_pt, num_pages * sizeof(pte_t));
 
-//    for (int i = 0; i < num_kernel_stack_pages; i++) {
-//        // Get the PFN from the provided kernel_stack_pt
-//        pte_t *src_pte = kernel_stack_pt + i;
-//        int pfn = src_pte->pfn; // Get the physical frame number from the source PTE
-//
-//        // Map each physical frame of the new kernel stack to its corresponding
-//        TracePrintf(0, "map_kernel_stack: physical frame number is: %d\n", );
-//        map_page(region0_pt, (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
-//    }
+    //    for (int i = 0; i < num_kernel_stack_pages; i++) {
+    //        // Get the PFN from the provided kernel_stack_pt
+    //        pte_t *src_pte = kernel_stack_pt + i;
+    //        int pfn = src_pte->pfn; // Get the physical frame number from the source PTE
+    //
+    //        // Map each physical frame of the new kernel stack to its corresponding
+    //        TracePrintf(0, "map_kernel_stack: physical frame number is: %d\n", );
+    //        map_page(region0_pt, (int)(kernel_stack_vaddr_start + i * PAGESIZE) >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
+    //    }
 
     TracePrintf(0, "Exit map_kernel_stack\n");
 

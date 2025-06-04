@@ -15,7 +15,7 @@ void syscalls_init(void){
     TracePrintf(1, "Enter syscalls_init.\n");
     // And the syscall code with the mask to get just the code, idk why this was set up this way in yuser.h
     // Highest syscall code though was 0xFF (YALNIX_BOOT), hence 256
-    syscall_handlers[YALNIX_FORK ^ YALNIX_PREFIX] = SysUnimplemented; //SysFork,
+    syscall_handlers[YALNIX_FORK ^ YALNIX_PREFIX] = SysFork;
     syscall_handlers[YALNIX_EXEC ^ YALNIX_PREFIX] = SysExec;
     syscall_handlers[YALNIX_EXIT ^ YALNIX_PREFIX] = SysExit,
     syscall_handlers[YALNIX_WAIT ^ YALNIX_PREFIX] = SysWait;
@@ -46,30 +46,6 @@ void SysUnimplemented(UserContext *uctxt){
 }
 
 
-// // All of these will also check the registers to ensure that the values stored within make sense
-// // If not they will return an error.
-// void SysFork(UserContext *uctxt) {
-//     // Create a new PCB object for the new process
-//     // Clone the page table for region 1
-//     pcb_t *new_proc = (pcb_t *) malloc(sizeof(pcb_t));
-//     cpyuc(&new_proc->user_context, uctxt);
-
-//     // (for now, cow might be implemented later) 
-//     // copy the data from all of userland over to new pages
-//     void *cpage = (void *) malloc(PAGESIZE);
-//     if(cpage == NULL){
-//         TracePrintf(1, "ERROR, the dummy page for copying could not be allocated.\n");
-//         return;
-//     }
-//     // Copy all of the pages thorugh the copy page most likely, I need to work on other stuff though
-//     free(cpage);
-//     // KCCopy to add the kernel to the new PCB
-//     // Set the return value in the child context to 0
-//     // Set the return value in the parent context to the child's pid
-
-//     // Add the child to the ready queue
-// }
-
 void SysFork(UserContext *uctxt) {
     pcb_t *current_pcb = current_process;
     pcb_t *new_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
@@ -79,7 +55,7 @@ void SysFork(UserContext *uctxt) {
     cpyuc(&new_pcb->user_context, uctxt);
 
     // Copy the page table content from the parent to the child, allocating new frames for the child
-    //CopyPageTable(current_pcb, new_pcb); // update this -----------------------------------------------------
+    CopyPageTable(current_pcb, new_pcb);
 
     // Context switch to the child
     int rc = KernelContextSwitch(KCCopy, new_pcb, NULL);
@@ -93,7 +69,7 @@ void SysFork(UserContext *uctxt) {
         // We're in the child
         WriteRegister(REG_PTBR1, (unsigned int)new_pcb->region1_pt);
         WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
-        return 0;
+        uctxt->regs[0] = 0;
     } else {
         // We're in the parent
         add_to_ready_queue(new_pcb);
@@ -102,7 +78,7 @@ void SysFork(UserContext *uctxt) {
         WriteRegister(REG_PTBR1, (unsigned int)current_pcb->region1_pt);
         WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
-        return new_pcb->pid;
+        uctxt->regs[0] = new_pcb->pid;
     }
 }
 
@@ -397,6 +373,7 @@ pcb_t *schedule(UserContext *uctxt){
     }
     //current_process should already be put into a different queue at this point
     cpyuc(uctxt, &current_process->user_context);    
+    WriteRegister(REG_PTBR1, (unsigned int)current_process->region1_pt);
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_1);
     TracePrintf(1, "Process %d scheduled, sp %p, pc %p, copied from %p, into %p.\n", current_process->pid, uctxt->sp, uctxt->pc, current_process->user_context, uctxt);
     TracePrintf(1, "Exit schedule.\n");
