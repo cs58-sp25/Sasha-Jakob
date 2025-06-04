@@ -72,7 +72,7 @@ int SyncCvarSignal(int cvar_id);
 int SyncCvarBroadcast(int cvar_id);
 int SyncCvarWait(int cvar_id, int lock_id);
 
-int SyncReclaimSync(int id);
+int SyncReclaim(int id);
 int GetNewID(void);
 void FreeID(int id);
 
