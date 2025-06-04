@@ -68,7 +68,7 @@ void SysFork(UserContext *uctxt) {
     // After context switch, check if we're in the child context
     if (current_process->pid == child_pcb->pid) {
         // We're in the child
-        WriteRegister(REG_PTBR1, (unsigned int)new_pcb->region1_pt);
+        WriteRegister(REG_PTBR1, (unsigned int)child_pcb->region1_pt);
         WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
         uctxt->regs[0] = 0;
     } else {

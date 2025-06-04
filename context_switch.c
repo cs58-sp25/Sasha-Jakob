@@ -136,8 +136,11 @@ void CopyPageTable(pcb_t *parent, pcb_t *child) {
  */
 void setup_temp_mapping(int pfn) {
     TracePrintf(1, "setup_temp_mapping: Mapping PFN %d to temporary address %p.\n", pfn, TEMP_MAPPING_VADDR);
-    map_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT, pfn, PROT_READ | PROT_WRITE);
-    WriteRegister(REG_TLB_FLUSH, TEMP_MAPPING_VADDR);  // Flush specific TLB entry
+    int vpn = TEMP_MAPPING_VADDR >> PAGESHIFT;
+    region0_pt[vpn].valid = 1;
+    region0_pt[vpn].pfn = pfn;
+    region0_pt[vpn].prot = PROT_READ | PROT_WRITE;
+    WriteRegister(REG_TLB_FLUSH, TEMP_MAPPING_VADDR);
 }
 
 /**
@@ -147,7 +150,8 @@ void setup_temp_mapping(int pfn) {
 void remove_temp_mapping(void) {
     // Invalidate the PTE for the given virtual address 'addr' in region0_pt.
     TracePrintf(0, "remove_temp_mapping: removing mapping for virtual page number: %d\n", TEMP_MAPPING_VADDR >> PAGESHIFT);
-    unmap_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT);
+    int vpn = TEMP_MAPPING_VADDR >> PAGESHIFT;
+    region0_pt[vpn].valid = 0;
 }
 
 /**
