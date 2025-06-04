@@ -58,7 +58,7 @@ int InitSyncObject(sync_type_t type, void *object);
 int GetCheckSync(int id, sync_type_t expected, sync_obj_t **out_sync);
 
 int SyncInitPipe(int *pipe_idp);
-int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr);
+int SyncReadPipe(int pipe_id, void *buf, int len);
 void SyncDrainWriters(pipe_t *pipe);
 void SyncDrainReaders(pipe_t *pipe);
 int SyncWritePipe(int pipe_id, void *buf, int len);

@@ -105,8 +105,10 @@ int SyncDestroyPipe(pipe_t *pipe){
 // blocks if nothing is available
 // otherwise reads whatever is and returns
 
-int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
+int SyncReadPipe(int pipe_id, void *buf, int len){
     TracePrintf(1, "Enter SyncReadPipe with id %d.\n", pipe_id);
+    pcb_t *curr = current_process;
+
     sync_obj_t *sync;
     if (GetCheckSync(pipe_id, PIPE, &sync) == ERROR){
         return ERROR;
@@ -119,6 +121,7 @@ int SyncReadPipe(int pipe_id, void *buf, int len, pcb_t *curr){
         TracePrintf(1, "ERROR, the pipe is not open for reading.\n");
         return ERROR;
     }
+    
     // Check to see if the buffer is empty
         // if it is 
         // set the pcb's read buffer to buf
