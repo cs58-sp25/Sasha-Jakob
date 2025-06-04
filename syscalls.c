@@ -301,18 +301,31 @@ void SysTtyWrite(UserContext *uctxt){
 
 void SysPipeInit(UserContext *uctxt){
     // get the pipe id from the UserContext
+    int *pipe_idp = (int *)uctxt->regs[0];
     // Allocate the pipe using InitPipe fomr sync
-        // if it fails return error
-    // copy the pipe id to user space
-        // if it fails return error
-    // return 0
+    uctxt->regs[0] = SyncInitPipe(pipe_idp);
 
 }
 
 void SysPipeRead(UserContext *uctxt){
     // get the pipe id, buf, and len from UserContext
+    int pipe_id = uctxt->regs[0];
+    void *buf = (void *)uctxt->regs[1]; // CREATE A SECOND BUFFER IN KERNEL TO PASS
+    int len = uctxt->regs[2]; 
+    
+    //kbuf is used in case the process gets blocked, it is stored in the kernel so that it can be written to even if the proc isn't running
+    void *kbuf = malloc(len);
+    
     // pass these values, along with current pcb, to ReadPipe from sync
     // if it returns, return the return value of ReadPipe
+    int rc = SyncReadPipe(pipe_id, kbuf, len);
+    if(rc = PROCESS_BLOCKED){
+        schedule(uctxt);
+    
+    }
+    
+    // 
+    memcpy(buf, kbuf, len);
 
 }
 

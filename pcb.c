@@ -410,7 +410,8 @@ void free_process_memory(pcb_t *proc) {
     //   Free the physical frame
     for(int i = 0; i < KERNEL_STACK_MAXSIZE >> PAGESHIFT; i++){
         pte_t entry = proc->kernel_stack[i];
-
+        int pfn = entry.pfn;
+        free_frame(pfn);
     }
 }
 
