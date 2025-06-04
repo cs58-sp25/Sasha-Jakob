@@ -33,4 +33,7 @@ void receive_handler(UserContext *cont);
 // Trap handler for terminal output complete (TRAP_TTY_TRANSMIT)
 void transmit_handler(UserContext *cont);
 
+// Helper function for printing ptes
+void print_pte(pte_t pageTable[], int pte_index);
+
 #endif

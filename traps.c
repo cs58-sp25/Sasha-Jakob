@@ -83,19 +83,6 @@ void illegal_handler(UserContext* cont){
 }
 
 
-void print_pte(pte_t pageTable[], int pte_index) {
-    if (pte_index < 0 || pte_index > MAX_PT_LEN) {
-        TracePrintf(0, "ERROR: Can't print pte with index %d, out of bounds!", pte_index);
-        return;
-    }
-
-    pte_t pte = pageTable[pte_index];
-    char r = pte.prot & PROT_READ ? 'r': '-';
-    char w = pte.prot & PROT_WRITE ? 'w': '-';
-    char x = pte.prot & PROT_EXEC ? 'x': '-';
-    TracePrintf(0, "pte[%d]: valid: %d   pfn: %d   PROT:%c%c%c\n", pte_index, pte.valid, pte.pfn, r, w, x);
-}
-
 void memory_handler(UserContext* cont) {
     int regionNumber = ((unsigned long) cont->addr) / VMEM_REGION_SIZE;
     void* relativeMemLocation = regionNumber == 1 ? cont->addr - VMEM_1_BASE : cont->addr;
@@ -155,4 +142,18 @@ void transmit_handler(UserContext* cont){
 
 static void other(void){
     TracePrintf(1, "An unimplemented trap has occured.\n");
+}
+
+// Useful helper print function ------------------------------
+void print_pte(pte_t pageTable[], int pte_index) {
+    if (pte_index < 0 || pte_index > MAX_PT_LEN) {
+        TracePrintf(0, "ERROR: Can't print pte with index %d, out of bounds!", pte_index);
+        return;
+    }
+
+    pte_t pte = pageTable[pte_index];
+    char r = pte.prot & PROT_READ ? 'r': '-';
+    char w = pte.prot & PROT_WRITE ? 'w': '-';
+    char x = pte.prot & PROT_EXEC ? 'x': '-';
+    TracePrintf(0, "pte[%d]: valid: %d   pfn: %d   PROT:%c%c%c\n", pte_index, pte.valid, pte.pfn, r, w, x);
 }
