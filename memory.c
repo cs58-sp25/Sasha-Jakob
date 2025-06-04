@@ -200,7 +200,7 @@ void enable_virtual_memory(void) {
     TracePrintf(0, "Virtual memory enabled\n");
 }
 
-pte_t *InitializeKernelStack(){
+pte_t *InitializeKernelStack(void){
     TracePrintf(1, "Enter InitializeKernelStack.\n");
     pte_t *kernel_stack = (pte_t *)malloc((KERNEL_STACK_MAXSIZE >> PAGESHIFT) * sizeof(pte_t));
     

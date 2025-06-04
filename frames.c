@@ -9,8 +9,6 @@ int *frame_bitMap;  // Bitmap to track free/used frames
 static void print_integer_array(int *array, int size, const char *array_name);
 
 int allocate_frame(void) {
-    TracePrintf(1, "Enter allocate_frame()\n");
-
     // // Call the print function
     // int array_size = 25;
     // print_integer_array(frame_bitMap, array_size, "frame_bitMap");

@@ -100,6 +100,7 @@ void CopyPageTable(pcb_t *parent, pcb_t *child) {
         if (parent_pt[i].valid == 1) {
             int child_frame = allocate_frame();
             child_pt[i].pfn = child_frame;
+            TracePrintf(0, "CopyPageTable: child process page table entry = %d, with physical frame number %d\n", i, child_frame);
 
             unsigned int parent_addr = (i + NUM_PAGES_REGION1) << PAGESHIFT;
             setup_temp_mapping(child_frame);  // Temporary map the frame to the scratch address
@@ -112,6 +113,21 @@ void CopyPageTable(pcb_t *parent, pcb_t *child) {
     }
 }
 
+// void CopyPageTable(pcb_t *parent, pcb_t *child) {
+//     pte_t *parent_pt = parent->region1_pt;
+//     pte_t *child_pt = child->region1_pt;
+
+//     for (int i = 0; i < NUM_PAGES_REGION1; i++) {
+//         if (parent_pt[i].valid == 1) {
+//             int child_frame = allocate_frame();
+//             map_page(child_pt, i, child_frame, parent_pt[i].prot);
+//             TracePrintf(0, "CopyPageTable: child process page table entry = %d, with physical frame number %d\n", i, child_frame);
+
+//             unsigned int parent_addr = (i + NUM_PAGES_REGION1) << PAGESHIFT;
+//             memcpy((void *)TEMP_MAPPING_VADDR, (void *)parent_addr, PAGESIZE);
+//         }
+//     }
+// }
 
 /**
  * @brief Sets up a temporary mapping in Region 0 for a given physical frame.

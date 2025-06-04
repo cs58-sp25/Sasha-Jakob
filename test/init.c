@@ -30,7 +30,7 @@ int main(void) {
         // Parent process
         TracePrintf(0, "PARENT: I am the parent process\n");
         TracePrintf(0, "PARENT: My PID is %d\n", GetPid());
-        TracePrintf(0, "PARENT: Fork() returned %d (child's PID)\n", pid);
+        TracePrintf(0, "PARENT: My child PID is %d\n", pid);
 
         TracePrintf(0, "PARENT: Will delay for 2 ticks\n");
         Delay(2);
