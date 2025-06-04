@@ -79,7 +79,7 @@ void setup_temp_mapping(int frame);
  *
  * @param addr Virtual address to unmap
  */
-void remove_temp_mapping(int frame);
+void remove_temp_mapping(void);
 
 
 /**

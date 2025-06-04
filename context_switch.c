@@ -83,7 +83,7 @@ KernelContext *KCCopy(KernelContext *kc_in, void *new_pcb_p, void *na) {
         memcpy((void *)TEMP_MAPPING_VADDR, (void *)((KSTACK_START_PAGE + i) << PAGESHIFT), PAGESIZE);
 
         // Remove the temporary mapping after copying
-        remove_temp_mapping(dest_pfn);
+        remove_temp_mapping();
         new_stack_pte->valid = 1;
         new_stack_pte->prot = PROT_READ | PROT_WRITE;
     }
@@ -104,7 +104,7 @@ void CopyPageTable(pcb_t *parent, pcb_t *child) {
             unsigned int parent_addr = (i + NUM_PAGES_REGION1) << PAGESHIFT;
             setup_temp_mapping(child_frame);  // Temporary map the frame to the scratch address
             memcpy((void *)TEMP_MAPPING_VADDR, (void *)parent_addr, PAGESIZE);
-            remove_temp_mapping(child_frame);
+            remove_temp_mapping();
 
             child_pt[i].prot = parent_pt[i].prot;
             child_pt[i].valid = 1;
@@ -128,10 +128,10 @@ void setup_temp_mapping(int pfn) {
  * @brief Removes a temporary mapping from Region 0.
  * @param addr The virtual address of the temporary mapping to remove.
  */
-void remove_temp_mapping(int pfn) {
-    TracePrintf(1, "remove_temp_mapping: Unmapping address %p.\n", TEMP_MAPPING_VADDR);
+void remove_temp_mapping(void) {
     // Invalidate the PTE for the given virtual address 'addr' in region0_pt.
-    unmap_page(region0_pt, pfn);
+    TracePrintf(0, "remove_temp_mapping: removing mapping for virtual page number: %d\n", TEMP_MAPPING_VADDR >> PAGESHIFT);
+    unmap_page(region0_pt, TEMP_MAPPING_VADDR >> PAGESHIFT);
 }
 
 /**

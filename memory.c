@@ -9,6 +9,7 @@
 #include <yalnix.h>
 
 
+
 int vm_enabled = 0;       // Initialize to 0 (VM disabled) by default
 void *kernel_brk = NULL;  // Current kernel break address
 void *user_brk = NULL;    // Current user break address
@@ -143,11 +144,6 @@ void init_region0_pageTable(int kernel_text_start, int kernel_data_start, int ke
     if (frame_bitMap == NULL) {
         TracePrintf(0, "ERROR: Failed to allocate frame_bitMap\n");
     }
-
-    // Initialize all entries in the Region 0 page table to invalid.
-    for (int i = 0; i < MAX_PT_LEN; i++) {
-        unmap_page(region0_pt, i);
-    }
     frame_bitMap[0] = 1;
 
     // Initialize mappings for kernel text, data, and heap sections in the Region 0 page table.
@@ -216,8 +212,8 @@ pte_t *InitializeKernelStack(){
     if(vm_enabled == 0){
         TracePrintf(1, "Allocating Kernel Stack using physical pages.\n");
         for (int j = 0; j < KERNEL_STACK_MAXSIZE >> PAGESHIFT; j++){
-            int vpn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
-            map_page(kernel_stack, j, vpn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
+            int pfn = (KERNEL_STACK_BASE >> PAGESHIFT) + j;
+            map_page(kernel_stack, j, pfn, PROT_READ | PROT_WRITE); // Map the kernel stack pages to themselves
         }
     }
 
@@ -255,6 +251,6 @@ void unmap_page(pte_t *page_table_base, int vpn) {
     // Invalidate the page table entry by setting the valid bit to 0.
     entry->valid = 0;
     entry->prot = 0;
+    free_frame(entry->pfn);
     entry->pfn = 0;
-    frame_bitMap[entry->pfn] = 0; // Mark the corresponding physical frame as free
 }
