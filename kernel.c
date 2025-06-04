@@ -51,11 +51,6 @@ void KernelStart(char *cmd_args[], unsigned int pmem_size, UserContext *uctxt) {
         TracePrintf(0, "ERROR, failed to initialize the idle pcb.n");
         Halt();
     }
-
-    // // Set all of doidle's pages to invalid
-    // for(int i=0; i<MAX_PT_LEN; i++){
-    //     idle_pcb->region1_pt[i].valid = 0;
-    // }
     
     // Attempt to get a frame for a location to put doidle
     int pfn = allocate_frame();
