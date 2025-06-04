@@ -24,8 +24,8 @@ void syscalls_init(void){
     syscall_handlers[YALNIX_DELAY ^ YALNIX_PREFIX] = SysDelay;
     syscall_handlers[YALNIX_TTY_READ ^ YALNIX_PREFIX] = SysUnimplemented; //SysTtyRead,
     syscall_handlers[YALNIX_TTY_WRITE ^ YALNIX_PREFIX] = SysUnimplemented; //SysTtyWrite,
-    syscall_handlers[YALNIX_PIPE_INIT ^ YALNIX_PREFIX] = SysUnimplemented; // SysPipeInit,
-    syscall_handlers[YALNIX_PIPE_READ ^ YALNIX_PREFIX] = SysUnimplemented; //SysPipeRead,
+    syscall_handlers[YALNIX_PIPE_INIT ^ YALNIX_PREFIX] = SysPipeInit,
+    syscall_handlers[YALNIX_PIPE_READ ^ YALNIX_PREFIX] = SysPipeRead,
     syscall_handlers[YALNIX_PIPE_WRITE ^ YALNIX_PREFIX] = SysUnimplemented; //SysPipeWrite,
     syscall_handlers[YALNIX_LOCK_INIT ^ YALNIX_PREFIX] = SysUnimplemented; //SysLockInit,
     syscall_handlers[YALNIX_LOCK_ACQUIRE ^ YALNIX_PREFIX] = SysUnimplemented; //SysAcquire,
