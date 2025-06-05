@@ -236,7 +236,7 @@ pcb_t *find_zombie_child(pcb_t *process) {
   
     int c = 0;
     while(c < len){
-        pcb_t *curr_pcb = pcb_from_queue_node(curr);
+        pcb_t *curr_pcb = pcb_from_children_node(curr);
         TracePrintf(1, "The process %d is being checked with status %d.\n", curr_pcb->pid, curr_pcb->state);
         // For each child, check if it's in PROCESS_ZOMBIE state, if so return
         if (curr_pcb->state == PROCESS_ZOMBIE) {
@@ -432,7 +432,7 @@ void terminate_process(pcb_t *process, int status) {
         TracePrintf(1, "Error: Attempting to terminate a NULL PCB.\n");
         return;
     }
-    
+   
     // Set process exit code to state
     process->exit_code = status;
     process->state = PROCESS_DEFAULT;
@@ -458,7 +458,6 @@ void terminate_process(pcb_t *process, int status) {
 
     // Check if the parent is waiting on it's children
     if(process->parent != NULL && process->parent->waiting_for_children){
-        TracePrintf(1, "Here in checking");
         remove_from_blocked_queue(process->parent);
         add_to_ready_queue(process->parent);
         if ((int *)process->parent->user_context.regs[0] != NULL){
