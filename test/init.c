@@ -23,7 +23,7 @@ int main(void) {
         TracePrintf(0, "CHILD: Fork() returned %d (should be 0)\n", pid);
 
         TracePrintf(0, "CHILD: Will delay for 1 tick\n");
-        Delay(1);
+        Delay(5);
         TracePrintf(0, "CHILD: Back from child delay\n");
 
         TracePrintf(0, "CHILD: Exiting with status 42\n");

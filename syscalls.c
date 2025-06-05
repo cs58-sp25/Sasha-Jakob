@@ -128,10 +128,16 @@ void SysWait(UserContext *uctxt) {
         // When the parent is unblocked check which of it's children are done
         // Grab the child's PID and exit status
     if (z_child == NULL){
+        TracePrintf(1, "Parent %d is waiting on children and is blocked.\n", current_process->pid);
         current_process->state = PROCESS_DEFAULT;
+        int *kstatus_ptr = malloc(sizeof(int));
+        uctxt->regs[0] = (int) kstatus_ptr;
         current_process->waiting_for_children = 1;
         add_to_blocked_queue(current_process);
         pcb_t *next = schedule(uctxt);
+        memcpy(status_ptr, kstatus_ptr, sizeof(int));
+        free(kstatus_ptr);
+
     }
     // Remove the child from the list of children
     else {

@@ -458,12 +458,14 @@ void terminate_process(pcb_t *process, int status) {
 
     // Check if the parent is waiting on it's children
     if(process->parent != NULL && process->parent->waiting_for_children){
+        TracePrintf(1, "The process's parent %d is already waiting, unblocking it.\n", process->parent->pid);
         remove_from_blocked_queue(process->parent);
         add_to_ready_queue(process->parent);
         if ((int *)process->parent->user_context.regs[0] != NULL){
             int *status_ptr = (int *) process->parent->user_context.regs[0];
             *status_ptr = status;
         }
+        process->parent->user_context.regs[0] = process->pid;
 
         free(process);
         return;
