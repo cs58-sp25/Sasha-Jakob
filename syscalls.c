@@ -48,36 +48,38 @@ void SysUnimplemented(UserContext *uctxt){
 
 
 void SysFork(UserContext *uctxt) {
-    TracePrintf(1, "YOU ARE HERE %d.\n", current_process->pid);
-    pcb_t *parent_pcb = current_process;
-    pcb_t *child_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
-    child_pcb->parent = parent_pcb;
+    TracePrintf(1, "should fork %d", current_process->should_fork);
+    if(current_process->should_fork){
+        TracePrintf(1, "YOU ARE HERE %d.\n", current_process->pid);
+        pcb_t *parent_pcb = current_process;
+        pcb_t *child_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
+        add_child(parent_pcb, child_pcb);
+        child_pcb->should_fork = false;
 
-    // Copy the user context passed from the trap handler into the new child PCB
-    cpyuc(&child_pcb->user_context, uctxt);
+        // Copy the user context passed from the trap handler into the new child PCB
+        cpyuc(&child_pcb->user_context, uctxt);
 
-    // Copy the page table content from the parent to the child, allocating new frames for the child
-    CopyPageTable(parent_pcb, child_pcb);
+        // Copy the page table content from the parent to the child, allocating new frames for the child
+        CopyPageTable(parent_pcb, child_pcb);
 
-    // Context switch to the child
-    child_pcb->kernel_stack = InitializeKernelStack();
-    int rc = KernelContextSwitch(KCCopy, child_pcb, NULL);
-    if (rc == -1) {
-        TracePrintf(0, "KernelContextSwitch failed when forking\n");
-        Halt();
-    }
-
-    // After context switch, check if we're in the child context
-    if (current_process->pid == child_pcb->pid) {
-        uctxt->regs[0] = 0;
-
-    } else {
-        // We're in the parent
+        // Context switch to the child
+        child_pcb->kernel_stack = InitializeKernelStack();
+        int rc = KernelContextSwitch(KCCopy, child_pcb, NULL);
+        if (rc == -1) {
+            TracePrintf(0, "KernelContextSwitch failed when forking\n");
+            Halt();
+        }
+        
         add_to_ready_queue(child_pcb);
-        insert_tail(&parent_pcb->children, &child_pcb->children_node);
 
         uctxt->regs[0] = child_pcb->pid;
+        TracePrintf(1, "Here");
+    } else {
+        current_process->should_fork = true;
+        uctxt->regs[0] = 0;
+
     }
+
 }
 
 void SysExec(UserContext *uctxt) {

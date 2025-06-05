@@ -79,6 +79,12 @@ pcb_t *create_pcb(void) {
     new_pcb->waiting_cvar_id = -1;
     new_pcb->waiting_pipe_id = -1;
 
+    new_pcb->pipe_buffer = NULL;
+    new_pcb->pipe_len = 0;
+    new_pcb->write_loc = 0;
+
+    new_pcb->should_fork = true;
+
     TracePrintf(1, "EXIT create_pcb.\n");
     return new_pcb;
 }
@@ -223,16 +229,21 @@ pcb_t *find_zombie_child(pcb_t *process) {
         return NULL;
     }
 
-    list_node_t *head = &process->children.head;
-    list_node_t *curr = head->next;
+    int len = process->children.count;
+    TracePrintf(1, "The process has %d children.\n", len);
+    list_node_t *curr = peek(&process->children);
     // Iterate through process's children list
-    while(curr != head){
+  
+    int c = 0;
+    while(c < len){
         pcb_t *curr_pcb = pcb_from_queue_node(curr);
+        TracePrintf(1, "The process %d is being checked with status %d.\n", curr_pcb->pid, curr_pcb->state);
         // For each child, check if it's in PROCESS_ZOMBIE state, if so return
         if (curr_pcb->state == PROCESS_ZOMBIE) {
             TracePrintf(1, "EXIT find_zombie_child: Found zombie child with PID %d.\n", curr_pcb->pid);
             return curr_pcb;
         }
+        c++;
         curr = curr->next;
     }
     // Return NULL if none
@@ -447,6 +458,7 @@ void terminate_process(pcb_t *process, int status) {
 
     // Check if the parent is waiting on it's children
     if(process->parent != NULL && process->parent->waiting_for_children){
+        TracePrintf(1, "Here in checking");
         remove_from_blocked_queue(process->parent);
         add_to_ready_queue(process->parent);
         if ((int *)process->parent->user_context.regs[0] != NULL){

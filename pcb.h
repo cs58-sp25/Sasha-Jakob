@@ -7,6 +7,7 @@
 #ifndef _PCB_H_
 #define _PCB_H_ 
 
+#include <stdbool.h>
 #include <hardware.h>
 #include <stdbool.h>
 #include <ylib.h>
@@ -82,6 +83,8 @@ typedef struct pcb {
     void *pipe_buffer;
     int pipe_len;
     int write_loc;
+    
+    bool should_fork;
 } pcb_t;
 
 
