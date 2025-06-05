@@ -138,6 +138,8 @@ void SysWait(UserContext *uctxt) {
         memcpy(status_ptr, kstatus_ptr, sizeof(int));
         free(kstatus_ptr);
 
+        
+
     }
     // Remove the child from the list of children
     else {
