@@ -48,9 +48,7 @@ void SysUnimplemented(UserContext *uctxt){
 
 
 void SysFork(UserContext *uctxt) {
-    TracePrintf(1, "should fork %d", current_process->should_fork);
     if(current_process->should_fork){
-        TracePrintf(1, "YOU ARE HERE %d.\n", current_process->pid);
         pcb_t *parent_pcb = current_process;
         pcb_t *child_pcb = create_pcb(); // add logic for setting up page tables and shit -----------------------------------------
         add_child(parent_pcb, child_pcb);
@@ -73,7 +71,6 @@ void SysFork(UserContext *uctxt) {
         add_to_ready_queue(child_pcb);
 
         uctxt->regs[0] = child_pcb->pid;
-        TracePrintf(1, "Here");
     } else {
         current_process->should_fork = true;
         uctxt->regs[0] = 0;
@@ -93,9 +90,9 @@ void SysExec(UserContext *uctxt) {
         TracePrintf(1, "ERROR, Loading the program has failed.\n");
         // Probably need to write code here to make it so a new process is loaded made to run
     }
-    current_process->state = PROCESS_DEFAULT;
-    add_to_ready_queue(current_process);
-    pcb_t *next = schedule(uctxt); 
+
+    cpyuc(uctxt, &current_process->user_context);
+
     TracePrintf(1, "Exit SysExec.\n");
 }
 

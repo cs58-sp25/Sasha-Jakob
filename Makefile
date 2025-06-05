@@ -21,7 +21,7 @@ K_INCS = kernel.h memory.h pcb.h traps.h list.h sync.h load_program.h syscalls.h
 U_SRC_DIR = test
 
 # What are the user c and include files?
-U_SRCS = init.c
+U_SRCS = init.c exec_test.c
 U_INCS =
 
 

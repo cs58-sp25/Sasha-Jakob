@@ -22,8 +22,9 @@ int main(void) {
         TracePrintf(0, "CHILD: My PID is %d\n", GetPid());
         TracePrintf(0, "CHILD: Fork() returned %d (should be 0)\n", pid);
 
-        TracePrintf(0, "CHILD: Will delay for 1 tick\n");
-        Delay(5);
+        TracePrintf(0, "CHILD: I will now attempt to exec exec_test\n");
+        char *argvec[] = {"test/exec_test", "2", NULL};
+        Exec("test/exec_test", argvec);
         TracePrintf(0, "CHILD: Back from child delay\n");
 
         TracePrintf(0, "CHILD: Exiting with status 42\n");
