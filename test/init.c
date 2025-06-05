@@ -10,6 +10,8 @@ int main(void) {
     TracePrintf(0, "NOW TESTING FORK --------------------------------------------------\n");
 
     int pid = Fork();
+    //int pid = 0;
+    TracePrintf(1, "The output of fork is %d.\n", pid);
 
     if (pid == -1) {
         TracePrintf(0, "ERROR: Fork() failed!\n");

@@ -109,6 +109,8 @@ void math_handler(UserContext* cont){
 void receive_handler(UserContext* cont){
     other();
     // Determine the terminal which generated the interrupt from code
+    int tty_id = cont->code;
+
     // Create a buffer for the incoming line (or reuse a static one)
     // Read the line of input from the terminal hardware
 
