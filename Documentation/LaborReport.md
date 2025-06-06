@@ -29,6 +29,8 @@ Traps Written:
 
 All PCB and List functions.
 
+Filling out LoadProgram to work with our implementation
+
 Edited KernelStart to function with DoIdle and Init.
 
 Bugfixes
