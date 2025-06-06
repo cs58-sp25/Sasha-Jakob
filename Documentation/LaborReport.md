@@ -1,6 +1,6 @@
 # Labor Report
 ## Jakob:
-Primary Tasks:
+### Primary Tasks:
 - Writing Syscalls
 - Writing Traps
 - Writing PCB
@@ -9,7 +9,7 @@ Primary Tasks:
 - Creating supporting structs and functions for syncs and pcbs
 - Editing and debugging code
 
-Details:
+### Details:
 Syscalls Written:
 - initializing syscall table
 - Editing of Fork
