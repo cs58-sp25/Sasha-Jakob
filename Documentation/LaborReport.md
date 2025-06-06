@@ -33,4 +33,7 @@ Edited KernelStart to function with DoIdle and Init.
 
 Bugfixes
 
-I would estimate hours spend on work but idek, its a lot.
+## Sasha:
+### Primary Tasks:
+
+### Details:
