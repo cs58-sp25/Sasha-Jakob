@@ -39,3 +39,6 @@ Bugfixes
 ### Primary Tasks:
 
 ### Details:
+
+## Unfinished
+all TTy, testing of syncing functions
