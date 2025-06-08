@@ -135,7 +135,7 @@ make
 - [x] Scheduling
 - [x] Synchronization
 - [x] IPC
-- [x] TTY I/O
+- [ ] TTY I/O
 
 Future Goals:
 - [ ] Disk
