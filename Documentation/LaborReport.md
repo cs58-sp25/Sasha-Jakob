@@ -37,8 +37,26 @@ Bugfixes
 
 ## Sasha:
 ### Primary Tasks:
+-Writing KernelStart
+-Setting up compiling
+-Writing Page Tables for both regions
+-Writing KCcopy() and KCswitch()
+-Integrating everything for checkpoints
+-Testing and debugging
 
 ### Details:
+-Kernel Start written for all checkpoints
+-Region0 page table initialization 
+-Idle cloning into Init succesfully
+-Fork syscall
+-Editing of PCB
+-Editing of Memory handler
+-Editing of Load program
+-Frame allocation/freeing
+-Page to frame mapping
+
+### Time spent
+-Over 25 hours a week averaged over the term outside of class
 
 ## Unfinished
 all TTy, testing of syncing functions
