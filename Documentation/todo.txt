@@ -1,0 +1,22 @@
+init the stuff
+Create two pcbs
+put the usercontext passed into kernel start in the first one
+malloc a new user context
+memcopy the first user context into the new malloc
+put the new user context into doidle
+
+depending on how kernel context works
+copy that as well
+add to doidle
+
+Do something with kernel contexts
+for doidle pcb put the program counter into usercontext
+add to ready queue the doidle pcb
+for init pcb (this has the current usercontext in it)
+	call load program on it to load init into the process
+
+set current process status to PROCESS_READY
+maybe do some other stuff idk
+set current process to init pcb
+
+
